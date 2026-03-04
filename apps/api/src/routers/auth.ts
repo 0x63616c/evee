@@ -16,6 +16,10 @@ const authInput = z.object({
 
 export const authRouter = new Hono()
   .post('/signup', async (c) => {
+    if (!env.SIGNUP_ENABLED) {
+      return c.json({ error: 'Signup is currently disabled.' }, 403);
+    }
+
     const body = await c.req.json();
     const input = authInput.parse(body);
 

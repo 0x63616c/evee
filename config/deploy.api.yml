@@ -29,6 +29,7 @@ builder:
 env:
   clear:
     PORT: 4201
+    SIGNUP_ENABLED: "false"
   secret:
     - DATABASE_URL
     - JWT_SECRET
