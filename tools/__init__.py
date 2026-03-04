@@ -2,7 +2,7 @@ import importlib
 import json
 import logging
 import pkgutil
-from typing import Callable
+from collections.abc import Callable
 
 log = logging.getLogger("evee.tools")
 
@@ -53,7 +53,7 @@ def get_status_message(name: str, arguments_json: str) -> str:
 def _discover_tools():
     """Import all modules in the tools package so their @register decorators run."""
     package_path = __path__
-    for importer, modname, ispkg in pkgutil.iter_modules(package_path):
+    for _importer, modname, _ispkg in pkgutil.iter_modules(package_path):
         importlib.import_module(f"tools.{modname}")
 
 

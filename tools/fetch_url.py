@@ -13,7 +13,9 @@ _FETCH_SCHEMA = {
     "type": "function",
     "function": {
         "name": "fetch_url",
-        "description": "Fetch a web page and extract its main text content. Use this to read articles, documentation, or any URL.",
+        "description": (
+            "Fetch a web page and extract its main text content. Use this to read articles, documentation, or any URL."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
@@ -28,7 +30,10 @@ _FETCH_SCHEMA = {
 }
 
 _HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"
+        " AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    )
 }
 
 

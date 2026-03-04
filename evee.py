@@ -1,10 +1,9 @@
 import asyncio
-import json
 import logging
 import os
+from collections.abc import Awaitable, Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Awaitable, Callable
 
 import discord
 from dotenv import load_dotenv
@@ -96,9 +95,7 @@ async def chat(messages: list[dict], on_status: OnStatus | None = None) -> str:
             if status and on_status:
                 await on_status(status)
 
-            result = await asyncio.to_thread(
-                execute_tool, tc.function.name, tc.function.arguments
-            )
+            result = await asyncio.to_thread(execute_tool, tc.function.name, tc.function.arguments)
             full_messages.append(
                 {
                     "role": "tool",
