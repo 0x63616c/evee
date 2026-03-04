@@ -22,4 +22,4 @@ A task is complete when:
 
 1. **Epic 5** -- Hetzner VPS + Kamal deployment (DNS, deploy, security hardening)
 2. **EVE-23** -- Re-setup SOPS + age secrets encryption
-3. **Epic 1** -- Evee Core Improvements (future)
+3. **Epic 1** -- Temporal Workflow Rewrite (future)
