@@ -103,6 +103,7 @@ def chat(messages: list[dict]) -> str:
 
 # --- Discord helpers ---
 
+
 def split_message(text: str, limit: int = 2000) -> list[str]:
     """Split a message into chunks that fit Discord's character limit."""
     if len(text) <= limit:

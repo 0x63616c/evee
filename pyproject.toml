@@ -8,3 +8,12 @@ dependencies = [
     "openai>=2.24.0",
     "python-dotenv>=1.2.2",
 ]
+
+[dependency-groups]
+dev = [
+    "black>=26.1.0",
+]
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
