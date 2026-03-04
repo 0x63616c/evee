@@ -7,7 +7,14 @@ import { chatRouter } from './routes/chat.js';
 
 export const app = new Hono()
   .use(logger())
-  .use(cors({ origin: '*', exposeHeaders: ['X-Thread-Id'] }))
+  .use(
+    cors({
+      origin: process.env.NODE_ENV === 'production'
+        ? 'https://evee.worldwidewebb.co'
+        : 'http://localhost:4200',
+      exposeHeaders: ['X-Thread-Id'],
+    }),
+  )
   .get('/healthz', (c) => c.text('ok'))
   .route('/api', apiRouter)
   .route('/api/chat', chatRouter);
