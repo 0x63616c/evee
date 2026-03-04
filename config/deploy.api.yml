@@ -1,5 +1,5 @@
 service: evee-api
-image: ghcr.io/0x63616c/evee-api
+image: 0x63616c/evee-api
 
 servers:
   web:
@@ -17,11 +17,12 @@ proxy:
 
 registry:
   server: ghcr.io
-  username: 0x63616c
+  username: "0x63616c"
   password:
     - KAMAL_REGISTRY_PASSWORD
 
 builder:
+  arch: amd64
   dockerfile: apps/api/Dockerfile
   context: .
 
@@ -46,8 +47,6 @@ accessories:
         - POSTGRES_PASSWORD
     directories:
       - data:/var/lib/postgresql/data
-    options:
-      restart: always
 
 ssh:
   user: root

@@ -1,5 +1,5 @@
 service: evee-web
-image: ghcr.io/0x63616c/evee-web
+image: 0x63616c/evee-web
 
 servers:
   web:
@@ -16,11 +16,12 @@ proxy:
 
 registry:
   server: ghcr.io
-  username: 0x63616c
+  username: "0x63616c"
   password:
     - KAMAL_REGISTRY_PASSWORD
 
 builder:
+  arch: amd64
   dockerfile: apps/web/Dockerfile
   context: .
   args:

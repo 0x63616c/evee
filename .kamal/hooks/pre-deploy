@@ -7,4 +7,4 @@ if [ "$KAMAL_SERVICE" != "evee-api" ]; then
 fi
 
 kamal app exec -p -c config/deploy.api.yml --version "$KAMAL_VERSION" \
-  "bunx drizzle-kit migrate && bun run src/db/seed.ts"
+  "sh -c 'bunx drizzle-kit migrate && bun run src/db/seed.ts'"
