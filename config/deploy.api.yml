@@ -10,6 +10,7 @@ proxy:
   ssl: true
   host: api.worldwidewebb.co
   app_port: 4201
+  response_timeout: 300
   healthcheck:
     path: /healthz
     interval: 3
@@ -22,7 +23,7 @@ registry:
 
 builder:
   dockerfile: apps/api/Dockerfile
-  context: apps/api
+  context: .
 
 env:
   clear:

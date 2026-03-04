@@ -1,4 +1,10 @@
 #!/bin/bash
-# Run database migrations using the new image before container swap
-VERSION=$KAMAL_VERSION kamal app exec -p -c config/deploy.api.yml \
+# Run database migrations before container swap (API deploys only)
+
+if [ "$KAMAL_SERVICE" != "evee-api" ]; then
+  echo "Skipping migrations for $KAMAL_SERVICE"
+  exit 0
+fi
+
+kamal app exec -p -c config/deploy.api.yml --version "$KAMAL_VERSION" \
   "bunx drizzle-kit migrate && bun run src/db/seed.ts"
