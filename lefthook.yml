@@ -9,3 +9,12 @@ pre-commit:
       glob: "**/*.{ts,tsx,js,jsx,json,jsonc}"
       run: ./apps/api/node_modules/.bin/biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
       stage_fixed: true
+    check-table-helpers:
+      glob: "apps/api/src/db/schema.ts"
+      run: |
+        for f in {staged_files}; do
+          if grep -qE 'export const \w+ = pgTable\(' "$f"; then
+            echo "ERROR: Use publicTable() or userTable() instead of pgTable() directly in $f"
+            exit 1
+          fi
+        done
