@@ -23,7 +23,7 @@
 
 | ID | Requirement | Priority | Epic | Notes |
 |----|-------------|----------|------|-------|
-| R13 | Deploy to production (Hetzner VPS + Coolify) | High | Epic 5 | In progress -- VPS provisioned, Coolify installed |
+| R13 | Deploy to production (Hetzner VPS + Kamal) | High | Epic 5 | In progress -- VPS provisioned, Kamal configured |
 | R14 | Temporal workflow for durable chat execution | High | Epic 1 | Automatic retries, replay, debugging |
 | R15 | Multi-model routing | Low | -- | Cheap model for simple tasks, smart for complex |
 | R16 | Auto-download videos from watched playlists | Medium | -- | Background job, yt-dlp |

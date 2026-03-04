@@ -115,14 +115,14 @@ tilt up
     +-- web (bun run dev, port 4200)
 ```
 
-## Production (Coolify)
+## Production (Kamal)
 
 ```
-Hetzner CPX41 VPS
-    +-- Coolify (self-hosted PaaS)
-        +-- evee-api (Docker, api.worldwidewebb.co)
-        +-- evee-web (nginx static, evee.worldwidewebb.co)
-        +-- postgres (Coolify managed)
+Hetzner CPX42 VPS
+    +-- kamal-proxy (HTTP routing, TLS)
+    +-- evee-api (Docker, api.worldwidewebb.co)
+    +-- evee-web (nginx static, evee.worldwidewebb.co)
+    +-- postgres (Docker accessory, managed by Kamal)
 ```
 
 ## Key Constraints

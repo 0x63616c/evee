@@ -48,7 +48,7 @@ apps/api/     # Hono API server
 apps/web/     # React + Vite frontend
 docs/         # Project documentation
 prompts/      # System prompt (loaded from disk each LLM call)
-infra/        # Infrastructure config (empty — future use)
+infra/        # Infrastructure config
 libs/         # Shared libraries (empty — future use)
 sdks/         # Client SDKs (empty — future use)
 tools/        # Internal tooling (empty — future use)
@@ -83,6 +83,21 @@ Copy `.env.example` to `.env` at the repo root:
 
 All scripts in `apps/api/package.json` read from the root `.env` via `--env-file=../../.env`.
 
+## Deployment (Kamal)
+
+Kamal deploys via SSH + Docker to the Hetzner VPS. Config lives in `config/`.
+
+```bash
+kamal setup -c config/deploy.api.yml    # First-time: install proxy, boot postgres, deploy API
+kamal setup -c config/deploy.web.yml    # First-time: deploy web (uses existing proxy)
+kamal deploy -c config/deploy.api.yml   # Subsequent deploys (API)
+kamal deploy -c config/deploy.web.yml   # Subsequent deploys (Web)
+kamal app logs -c config/deploy.api.yml # View API logs
+kamal rollback -c config/deploy.api.yml # Rollback to previous version
+```
+
+CI auto-deploys on push to main after lint + tests pass.
+
 ## Common Commands (apps/api)
 
 ```bash
@@ -106,11 +121,9 @@ bun run lint:fix   # Run Biome lint and auto-fix
 
 ## Secrets Management
 
-`.env` files are encrypted with SOPS + age and committed as `.env.enc`. Never commit plaintext `.env` files.
-
-- Encrypt: `sops -e .env > .env.enc`
-- Decrypt all: `bash scripts/decrypt-secrets.sh`
-- Age private key is stored in 1Password as `evee age private key`
+- `.kamal/secrets` — local secrets for manual Kamal deploys (gitignored)
+- GitHub repo secrets — used by CI deploy jobs (VPS_SSH_KEY, GHCR_TOKEN, DATABASE_URL, JWT_SECRET, OPENROUTER_API_KEY, POSTGRES_PASSWORD)
+- Never commit plaintext secrets.
 
 ## Key Conventions
 

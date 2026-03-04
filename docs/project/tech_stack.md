@@ -77,8 +77,8 @@
 
 | Component | Provider | Config |
 |-----------|----------|--------|
-| VPS | Hetzner CPX41 | Ubuntu, Nuremberg |
-| PaaS | Coolify (self-hosted) | Auto-deploy from GitHub |
+| VPS | Hetzner CPX42 | Ubuntu, Nuremberg |
+| Deploy | Kamal 2 | SSH + Docker, CI auto-deploy |
 | Domain | worldwidewebb.co | DNS via Spaceship |
 | Frontend | evee.worldwidewebb.co | nginx static build |
 | API | api.worldwidewebb.co | Bun + Hono Docker container |

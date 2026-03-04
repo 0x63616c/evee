@@ -1,0 +1,30 @@
+service: evee-web
+image: ghcr.io/0x63616c/evee-web
+
+servers:
+  web:
+    hosts:
+      - 46.225.220.11
+
+proxy:
+  ssl: true
+  host: evee.worldwidewebb.co
+  app_port: 80
+  healthcheck:
+    path: /
+    interval: 3
+
+registry:
+  server: ghcr.io
+  username: 0x63616c
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+builder:
+  dockerfile: apps/web/Dockerfile
+  context: .
+  args:
+    VITE_API_URL: https://api.worldwidewebb.co
+
+ssh:
+  user: root

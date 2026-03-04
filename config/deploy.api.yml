@@ -1,0 +1,54 @@
+service: evee-api
+image: ghcr.io/0x63616c/evee-api
+
+servers:
+  web:
+    hosts:
+      - 46.225.220.11
+
+proxy:
+  ssl: true
+  host: api.worldwidewebb.co
+  app_port: 4201
+  healthcheck:
+    path: /healthz
+    interval: 3
+
+registry:
+  server: ghcr.io
+  username: 0x63616c
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+builder:
+  dockerfile: apps/api/Dockerfile
+  context: apps/api
+
+env:
+  clear:
+    PORT: 4201
+  secret:
+    - DATABASE_URL
+    - JWT_SECRET
+    - OPENROUTER_API_KEY
+
+accessories:
+  postgres:
+    image: postgres:16-alpine
+    host: 46.225.220.11
+    port: "127.0.0.1:5432:5432"
+    env:
+      clear:
+        POSTGRES_USER: postgres
+        POSTGRES_DB: evee
+      secret:
+        - POSTGRES_PASSWORD
+    directories:
+      - data:/var/lib/postgresql/data
+    options:
+      restart: always
+
+ssh:
+  user: root
+
+hooks_path: .kamal/hooks

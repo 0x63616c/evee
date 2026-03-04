@@ -14,7 +14,7 @@
 
 | Epic | Linear Project | Status | Priority |
 |------|---------------|--------|----------|
-| [Epic 5: Hetzner VPS + Coolify Infrastructure](https://linear.app/evee/project/epic-5-hetzner-vps-coolify-infrastructure) | 6f591198 | In Progress | High |
+| [Epic 5: Hetzner VPS + Kamal Infrastructure](https://linear.app/evee/project/epic-5-hetzner-vps-coolify-infrastructure) | 6f591198 | In Progress | High |
 | [Epic 4: Custom Web Chat UI](https://linear.app/evee/project/epic-4-custom-web-chat-ui-047c175b8da1) | 6bcfe217 | Done | High |
 | [Epic 1: Temporal Workflow Rewrite](https://linear.app/evee/project/epic-1-temporal-workflow-rewrite-388461faf1cd) | 539b3e48 | Planned | High |
 | [Epic 2: SQLite Logging](https://linear.app/evee/project/epic-2-sqlite-logging-62a5c8041277) | 1064daed | Planned | High |
@@ -23,14 +23,13 @@
 
 ## Backlog
 
-### Epic 5: Hetzner VPS + Coolify Infrastructure
+### Epic 5: Hetzner VPS + Kamal Infrastructure
 
 | Issue | Title | Priority | Status |
 |-------|-------|----------|--------|
 | [EVE-17](https://linear.app/evee/issue/EVE-17) | Configure DNS for worldwidewebb.co subdomains | Urgent | Backlog |
-| [EVE-20](https://linear.app/evee/issue/EVE-20) | Deploy evee to Coolify | Urgent | Backlog |
+| [EVE-20](https://linear.app/evee/issue/EVE-20) | Deploy evee with Kamal | Urgent | Backlog |
 | [EVE-21](https://linear.app/evee/issue/EVE-21) | VPS security hardening | High | Backlog |
-| [EVE-22](https://linear.app/evee/issue/EVE-22) | Set up Coolify notifications | Low | Backlog |
 
 ### Other
 
@@ -51,7 +50,7 @@
 | EVE-12 | Tool calling -- web search and URL fetch | Epic 4 |
 | EVE-13 | Thread continuity | Epic 4 |
 | EVE-16 | Provision Hetzner CPX41 server | Epic 5 |
-| EVE-18 | Install and configure Coolify on VPS | Epic 5 |
+| EVE-18 | Set up deployment infrastructure | Epic 5 |
 | EVE-19 | Write Dockerfiles for evee API and web | Epic 5 |
 | EVE-8 | Remove claude-max-api-proxy references | -- |
 | EVE-6 | Set up OpenRouter as LLM provider | -- |

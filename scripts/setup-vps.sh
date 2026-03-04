@@ -4,10 +4,10 @@
 #
 # What it does:
 #   1. System update
-#   2. Firewall (ufw) — allow SSH, HTTP, HTTPS, Coolify (8000)
+#   2. Firewall (ufw) — allow SSH, HTTP, HTTPS only
 #   3. fail2ban — ban IPs that brute-force SSH
 #   4. SSH hardening — disable password auth, key-only
-#   5. Install Coolify
+#   5. Install Docker CE (official)
 
 set -euo pipefail
 
@@ -19,9 +19,8 @@ apt-get install -y ufw
 ufw default deny incoming
 ufw default allow outgoing
 ufw allow 22/tcp   # SSH
-ufw allow 80/tcp   # HTTP (Traefik)
-ufw allow 443/tcp  # HTTPS (Traefik)
-ufw allow 8000/tcp # Coolify UI + GitHub webhooks (TODO: move behind subdomain, see EVE-21)
+ufw allow 80/tcp   # HTTP
+ufw allow 443/tcp  # HTTPS
 ufw --force enable
 
 echo "==> Installing fail2ban"
@@ -34,12 +33,16 @@ sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/ssh
 sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
 systemctl restart ssh
 
-echo "==> Installing Coolify"
-curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash
+echo "==> Installing Docker CE"
+apt-get install -y ca-certificates curl
+install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+chmod a+r /etc/apt/keyrings/docker.asc
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+apt-get update -y
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin
 
 echo ""
 echo "==> Setup complete!"
 echo ""
-echo "Coolify is running at http://<IP>:8000"
-echo "Port 8000 is open for GitHub webhooks."
-echo "See EVE-21 to move Coolify behind a subdomain and close 8000."
+echo "Docker is installed. Kamal will handle the rest (kamal setup installs kamal-proxy)."
