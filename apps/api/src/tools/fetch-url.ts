@@ -1,5 +1,5 @@
-import { tool } from 'ai';
 import dns from 'node:dns/promises';
+import { tool } from 'ai';
 import { z } from 'zod';
 
 const BLOCKED_HOSTNAMES = new Set([

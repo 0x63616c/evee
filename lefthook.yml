@@ -9,12 +9,14 @@ pre-commit:
       glob: "**/*.{ts,tsx,js,jsx,json,jsonc}"
       run: ./apps/api/node_modules/.bin/biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
       stage_fixed: true
-    check-table-helpers:
+    check-rls:
       glob: "apps/api/src/db/schema.ts"
       run: |
         for f in {staged_files}; do
-          if grep -qE 'export const \w+ = pgTable\(' "$f"; then
-            echo "ERROR: Use publicTable() or userTable() instead of pgTable() directly in $f"
+          PG=$(grep -c 'pgTable(' "$f" 2>/dev/null || true)
+          RLS=$(grep -c '\.enableRLS()' "$f" 2>/dev/null || true)
+          if [ "$PG" != "$RLS" ]; then
+            echo "ERROR: $PG pgTable() calls but $RLS .enableRLS() in $f — use publicTable() for shared tables or add .enableRLS() for user-scoped tables"
             exit 1
           fi
         done

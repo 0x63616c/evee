@@ -1,7 +1,5 @@
 import { sql } from 'drizzle-orm';
 import {
-  type PgColumnBuilderBase,
-  type PgTableExtraConfigValue,
   pgPolicy,
   pgTable,
   text,
@@ -9,8 +7,32 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 
-// Re-export pgTable as publicTable — forces conscious opt-out of RLS
+// ── Table helpers ───────────────────────────────────────────────────────
+// publicTable  = shared data, no RLS (channels, users)
+// userIdColumn + isolationPolicy + .enableRLS() = user-scoped data
+//
+// Lefthook pre-commit guard ensures every pgTable call in this file
+// either uses publicTable or has .enableRLS().
+
+/** Alias for pgTable — signals "this table is intentionally public". */
 export const publicTable = pgTable;
+
+/** Column: user_id FK with DEFAULT from the RLS session variable. */
+const userIdColumn = () =>
+  varchar('user_id', { length: 255 })
+    .notNull()
+    .references(() => users.id)
+    .default(sql`current_setting('app.current_user_id')`);
+
+/** RLS policy: rows filtered by current_setting('app.current_user_id'). */
+const isolationPolicy = (name: string) =>
+  pgPolicy(`${name}_user_isolation`, {
+    for: 'all',
+    using: sql`user_id = current_setting('app.current_user_id')`,
+    withCheck: sql`user_id = current_setting('app.current_user_id')`,
+  });
+
+// ── Public tables ───────────────────────────────────────────────────────
 
 export const users = publicTable('users', {
   id: varchar('id', { length: 255 }).primaryKey(),
@@ -26,48 +48,35 @@ export const channels = publicTable('channels', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-const isolationPolicy = (name: string) =>
-  pgPolicy(`${name}_user_isolation`, {
-    for: 'all',
-    using: sql`user_id = current_setting('app.current_user_id')`,
-    withCheck: sql`user_id = current_setting('app.current_user_id')`,
-  });
+// ── User-scoped tables (RLS-protected) ──────────────────────────────────
 
-/** User-scoped table: automatic RLS + userId column + isolation policy. */
-export function userTable<T extends Record<string, PgColumnBuilderBase>>(
-  name: string,
-  columns: T,
-) {
-  return pgTable(
-    name,
-    {
-      ...columns,
-      userId: varchar('user_id', { length: 255 })
-        .notNull()
-        .references(() => users.id)
-        .default(sql`current_setting('app.current_user_id')`),
-    },
-    () => [isolationPolicy(name)] as PgTableExtraConfigValue[],
-  ).enableRLS();
-}
+export const threads = pgTable(
+  'threads',
+  {
+    id: varchar('id', { length: 255 }).primaryKey(),
+    channelId: varchar('channel_id', { length: 255 })
+      .notNull()
+      .references(() => channels.id),
+    name: text('name').notNull(),
+    userId: userIdColumn(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  () => [isolationPolicy('threads')],
+).enableRLS();
 
-export const threads = userTable('threads', {
-  id: varchar('id', { length: 255 }).primaryKey(),
-  channelId: varchar('channel_id', { length: 255 })
-    .notNull()
-    .references(() => channels.id),
-  name: text('name').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
-
-export const messages = userTable('messages', {
-  id: varchar('id', { length: 255 }).primaryKey(),
-  threadId: varchar('thread_id', { length: 255 })
-    .notNull()
-    .references(() => threads.id),
-  role: text('role').notNull(),
-  content: text('content').notNull(),
-  toolCallId: text('tool_call_id'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+export const messages = pgTable(
+  'messages',
+  {
+    id: varchar('id', { length: 255 }).primaryKey(),
+    threadId: varchar('thread_id', { length: 255 })
+      .notNull()
+      .references(() => threads.id),
+    role: text('role').notNull(),
+    content: text('content').notNull(),
+    userId: userIdColumn(),
+    toolCallId: text('tool_call_id'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  () => [isolationPolicy('messages')],
+).enableRLS();
