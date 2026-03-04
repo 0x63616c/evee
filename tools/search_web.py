@@ -1,4 +1,4 @@
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
 from tools import register
 
@@ -26,6 +26,4 @@ def search_web(query: str) -> str:
     results = DDGS().text(query, max_results=5)
     if not results:
         return "no results found"
-    return "\n\n".join(
-        f"{r['title']}\n{r['href']}\n{r['body']}" for r in results
-    )
+    return "\n\n".join(f"{r['title']}\n{r['href']}\n{r['body']}" for r in results)
