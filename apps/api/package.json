@@ -20,6 +20,7 @@
     "@openrouter/ai-sdk-provider": "^2.2.3",
     "ai": "^6.0.111",
     "drizzle-orm": "^0.44",
+    "duck-duck-scrape": "^2.2.7",
     "hono": "^4.12.3",
     "jose": "^6",
     "postgres": "^3",
