@@ -19,10 +19,28 @@ jobs:
 
   test-api:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: evee_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/evee_test
+      JWT_SECRET: test-secret-for-ci
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
       - run: bun install --cwd apps/api --frozen-lockfile
+      - run: cd apps/api && bunx drizzle-kit migrate
       - run: cd apps/api && bun run test
 
   test-web:

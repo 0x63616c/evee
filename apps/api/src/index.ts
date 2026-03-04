@@ -9,9 +9,10 @@ export const app = new Hono()
   .use(logger())
   .use(
     cors({
-      origin: process.env.NODE_ENV === 'production'
-        ? 'https://evee.worldwidewebb.co'
-        : 'http://localhost:4200',
+      origin:
+        process.env.NODE_ENV === 'production'
+          ? 'https://evee.worldwidewebb.co'
+          : 'http://localhost:4200',
       exposeHeaders: ['X-Thread-Id'],
     }),
   )
