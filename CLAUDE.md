@@ -103,6 +103,14 @@ bun run test       # Run Vitest test suite
 bun run lint:fix   # Run Biome lint and auto-fix
 ```
 
+## Secrets Management
+
+`.env` files are encrypted with SOPS + age and committed as `.env.enc`. Never commit plaintext `.env` files.
+
+- Encrypt: `sops -e apps/api/.env > apps/api/.env.enc`
+- Decrypt all: `bash scripts/decrypt-secrets.sh`
+- Age private key is stored in 1Password as `evee age private key`
+
 ## Key Conventions
 
 - `biome.json` lives at the **repo root** and applies to all packages.
