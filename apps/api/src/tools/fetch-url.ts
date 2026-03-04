@@ -1,5 +1,5 @@
 import { tool } from 'ai';
-import { dns } from 'bun';
+import dns from 'node:dns/promises';
 import { z } from 'zod';
 
 const BLOCKED_HOSTNAMES = new Set([
@@ -92,19 +92,23 @@ async function validateUrl(
   }
 
   // Resolve DNS to get actual IP addresses before connecting
-  let results: Awaited<ReturnType<typeof dns.lookup>>;
+  let addresses: string[];
   try {
-    results = await dns.lookup(hostname);
+    const [v4, v6] = await Promise.all([
+      dns.resolve4(hostname).catch(() => []),
+      dns.resolve6(hostname).catch(() => []),
+    ]);
+    addresses = [...v4, ...v6];
   } catch {
     return { ok: false, error: `DNS resolution failed for ${hostname}` };
   }
 
-  if (results.length === 0) {
+  if (addresses.length === 0) {
     return { ok: false, error: `No DNS records found for ${hostname}` };
   }
 
   // Check every resolved IP against private ranges
-  for (const { address } of results) {
+  for (const address of addresses) {
     if (isPrivateIp(address)) {
       return {
         ok: false,
