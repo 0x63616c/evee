@@ -1,8 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import type { ModelMessage } from 'ai';
 import { stepCountIs, streamText } from 'ai';
-import { eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import { typeid } from 'typeid-js';
 import { z } from 'zod';
 import { db } from '../db/index.js';
@@ -62,11 +63,26 @@ export const chatRouter = protectedRouter().post('/', async (c) => {
   // Capture threadId for use in callbacks
   const resolvedThreadId = threadId;
 
+  // Load message history for thread continuity (most recent 100)
+  const history = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.threadId, resolvedThreadId))
+    .orderBy(asc(messages.createdAt))
+    .limit(100);
+
+  const aiMessages: ModelMessage[] = history
+    .filter((m) => m.role === 'user' || m.role === 'assistant')
+    .map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    }));
+
   // Stream AI response with tool calling
   const result = streamText({
     model: openrouter('deepseek/deepseek-chat'),
     system: systemPrompt,
-    messages: [{ role: 'user', content: input.message }],
+    messages: aiMessages,
     tools: { search_web: searchWeb, fetch_url: fetchUrl },
     stopWhen: stepCountIs(10),
     onStepFinish: async ({ toolCalls, toolResults }) => {
