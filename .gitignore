@@ -9,3 +9,9 @@ dist/
 .vscode/
 *.swp
 .archive/
+
+# Python artifacts (legacy)
+.python-version
+.venv/
+.pytest_cache/
+.ruff_cache/
