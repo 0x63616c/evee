@@ -1,3 +1,7 @@
+import ipaddress
+import socket
+from urllib.parse import urlparse
+
 import httpx
 import trafilatura
 
@@ -28,8 +32,28 @@ _HEADERS = {
 }
 
 
+def validate_url(url: str) -> str | None:
+    """Return an error message if the URL is unsafe, or None if it's OK."""
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        return "only http/https URLs are supported"
+    if not parsed.hostname:
+        return "invalid URL"
+    try:
+        resolved = socket.getaddrinfo(parsed.hostname, None)
+        ip = ipaddress.ip_address(resolved[0][4][0])
+    except (socket.gaierror, ValueError):
+        return "could not resolve hostname"
+    if ip.is_private or ip.is_loopback or ip.is_link_local:
+        return "cannot fetch internal/private URLs"
+    return None
+
+
 @register("fetch_url", schema=_FETCH_SCHEMA, status="reading: {url}")
 def fetch_url(url: str) -> str:
+    error = validate_url(url)
+    if error:
+        return error
     try:
         resp = httpx.get(url, timeout=10, follow_redirects=True, headers=_HEADERS)
         resp.raise_for_status()
