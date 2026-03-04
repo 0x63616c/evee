@@ -15,7 +15,7 @@ Personal AI assistant — chat interface with web search, URL fetching, and conv
 
 ```bash
 lefthook install            # wire up git hooks (once, after cloning)
-bash scripts/decrypt-secrets.sh  # decrypt .env from .env.enc (see Secrets below)
+cp .env.example .env             # fill in your own values (see Secrets below)
 tilt up                     # start Postgres, run migrations, API (4201) + web (4200)
 ```
 
