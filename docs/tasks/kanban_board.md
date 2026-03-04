@@ -16,7 +16,7 @@
 |------|---------------|--------|----------|
 | [Epic 5: Hetzner VPS + Kamal Infrastructure](https://linear.app/evee/project/epic-5-hetzner-vps-coolify-infrastructure) | 6f591198 | In Progress | High |
 | [Epic 4: Custom Web Chat UI](https://linear.app/evee/project/epic-4-custom-web-chat-ui-047c175b8da1) | 6bcfe217 | Done | High |
-| [Epic 1: Temporal Workflow Rewrite](https://linear.app/evee/project/epic-1-temporal-workflow-rewrite-388461faf1cd) | 539b3e48 | Planned | High |
+| [Epic 1: Evee Core Improvements](https://linear.app/evee/project/epic-1-temporal-workflow-rewrite-388461faf1cd) | 539b3e48 | Planned | High |
 | [Epic 2: SQLite Logging](https://linear.app/evee/project/epic-2-sqlite-logging-62a5c8041277) | 1064daed | Planned | High |
 
 > **Note:** Epic 3 (Discord Log Streaming) is superseded -- Discord is retired. Should be archived.
@@ -38,7 +38,7 @@
 | [EVE-23](https://linear.app/evee/issue/EVE-23) | Re-setup SOPS + age secrets encryption | Low | Backlog | -- |
 | [EVE-15](https://linear.app/evee/issue/EVE-15) | Define and implement backup strategy | Medium | Backlog | -- |
 | [EVE-14](https://linear.app/evee/issue/EVE-14) | Auto-download videos from watched playlists | Medium | Backlog | -- |
-| [EVE-5](https://linear.app/evee/issue/EVE-5) | Rewrite chat as Temporal workflow | High | Backlog | Epic 1 |
+| [EVE-5](https://linear.app/evee/issue/EVE-5) | Improve chat reliability and durability | High | Backlog | Epic 1 |
 
 ## Completed
 

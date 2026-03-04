@@ -51,7 +51,7 @@ function SignupPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <h1 className="text-2xl font-semibold tracking-tight">
-            The Workflow Engine
+            World Wide Webb
           </h1>
           <p className="mt-1 text-base text-muted-foreground">
             Create your account
