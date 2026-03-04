@@ -9,12 +9,6 @@ import { messages, threads } from '../db/schema.js';
 import { withUserScope } from '../db/with-user-scope.js';
 import { env } from '../env.js';
 import { protectedRouter } from '../lib/protected-router.js';
-import {
-  aiResponseDuration,
-  messagesTotal,
-  threadsCreatedTotal,
-  toolCallsTotal,
-} from '../middleware/metrics.js';
 import { fetchUrl } from '../tools/fetch-url.js';
 import { searchWeb } from '../tools/search-web.js';
 
@@ -47,10 +41,8 @@ async function prepareChat(db: ScopedDb, input: z.infer<typeof chatInput>) {
       channelId: input.channelId,
       name: input.message.slice(0, 50),
     });
-    threadsCreatedTotal.inc();
   }
   await saveMessage(db, { threadId, role: 'user', content: input.message });
-  messagesTotal.inc({ role: 'user' });
   await db
     .update(threads)
     .set({ updatedAt: new Date() })
@@ -76,7 +68,6 @@ export const chatRouter = protectedRouter().post('/', async (c) => {
     prepareChat(db, input),
   );
 
-  const streamStart = performance.now();
   const result = streamText({
     model: openrouter('deepseek/deepseek-chat'),
     system: systemPrompt,
@@ -88,7 +79,6 @@ export const chatRouter = protectedRouter().post('/', async (c) => {
       await withUserScope(userId, async (db) => {
         for (let i = 0; i < toolCalls.length; i++) {
           const call = toolCalls[i];
-          toolCallsTotal.inc({ tool_name: call.toolName });
           const content = JSON.stringify({
             type: 'tool_call',
             name: call.toolName,
@@ -106,9 +96,6 @@ export const chatRouter = protectedRouter().post('/', async (c) => {
     },
     onFinish: async ({ text }) => {
       if (!text) return;
-      messagesTotal.inc({ role: 'assistant' });
-      const elapsed = (performance.now() - streamStart) / 1000;
-      aiResponseDuration.observe(elapsed);
       await withUserScope(userId, (db) =>
         saveMessage(db, { threadId, role: 'assistant', content: text }),
       );
