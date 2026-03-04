@@ -7,7 +7,7 @@ import { chatRouter } from './routes/chat.js';
 
 export const app = new Hono()
   .use(logger())
-  .use(cors())
+  .use(cors({ origin: '*', exposeHeaders: ['X-Thread-Id'] }))
   .get('/healthz', (c) => c.text('ok'))
   .route('/api', apiRouter)
   .route('/api/chat', chatRouter);
