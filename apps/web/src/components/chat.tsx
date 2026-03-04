@@ -102,6 +102,14 @@ function ChatRuntime({
         if (token) return { Authorization: `Bearer ${token}` };
         return {};
       },
+      fetch: async (url, init) => {
+        const res = await globalThis.fetch(url, init);
+        const newThreadId = res.headers.get('X-Thread-Id');
+        if (newThreadId) {
+          threadIdRef.current = newThreadId;
+        }
+        return res;
+      },
       prepareSendMessagesRequest: async (options) => {
         const lastMessage = options.messages[options.messages.length - 1];
         const textPart = lastMessage?.parts?.find((p) => p.type === 'text');
