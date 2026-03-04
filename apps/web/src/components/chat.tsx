@@ -2,19 +2,19 @@ import {
   AssistantRuntimeProvider,
   ComposerPrimitive,
   MessagePrimitive,
-  ThreadPrimitive,
   type TextMessagePartProps,
+  ThreadPrimitive,
 } from '@assistant-ui/react';
-import { MarkdownTextPrimitive } from '@assistant-ui/react-markdown';
 import {
   AssistantChatTransport,
   useChatRuntime,
 } from '@assistant-ui/react-ai-sdk';
+import { MarkdownTextPrimitive } from '@assistant-ui/react-markdown';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { UIMessage } from 'ai';
 import { useRef } from 'react';
 import { FetchUrlUI, SearchWebUI } from '@/components/tool-ui';
-import { api, API_URL } from '@/lib/api';
+import { API_URL, api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 
 interface ChatProps {
@@ -76,7 +76,13 @@ interface ChatRuntimeProps extends ChatProps {
   onFinish: () => void;
 }
 
-function ChatRuntime({ channelId, threadId, threadName, initialMessages, onFinish }: ChatRuntimeProps) {
+function ChatRuntime({
+  channelId,
+  threadId,
+  threadName,
+  initialMessages,
+  onFinish,
+}: ChatRuntimeProps) {
   const channelIdRef = useRef(channelId);
   const threadIdRef = useRef(threadId);
   channelIdRef.current = channelId;
@@ -91,8 +97,10 @@ function ChatRuntime({ channelId, threadId, threadName, initialMessages, onFinis
         if (token) return { Authorization: `Bearer ${token}` };
         return {};
       },
-      // biome-ignore lint/suspicious/noExplicitAny: Bun extends fetch with preconnect; cast needed
-      fetch: (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+      fetch: (async (
+        url: Parameters<typeof fetch>[0],
+        init?: Parameters<typeof fetch>[1],
+      ) => {
         const res = await globalThis.fetch(url, init);
         const newThreadId = res.headers.get('X-Thread-Id');
         if (newThreadId) {
