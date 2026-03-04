@@ -19,7 +19,17 @@ from tools import execute_tool, get_openai_tools, get_status_message
 
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+LOG_FILE = Path.home() / ".local" / "log" / "evee.log"
+LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler(LOG_FILE),
+    ],
+)
 log = logging.getLogger("evee")
 
 PROXY_URL = "http://localhost:3456"
