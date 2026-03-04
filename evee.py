@@ -1,12 +1,7 @@
 import asyncio
-import atexit
 import json
 import logging
 import os
-import subprocess
-import time
-import urllib.error
-import urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Awaitable, Callable
@@ -32,70 +27,15 @@ logging.basicConfig(
 )
 log = logging.getLogger("evee")
 
-PROXY_URL = "http://localhost:3456"
-PROXY_SCRIPT = "/Users/calum/code/github.com/atalovesyou/claude-max-api-proxy/dist/server/standalone.js"
-PROXY_LOG_DIR = Path.home() / ".local" / "log"
-PROXY_LOG_FILE = PROXY_LOG_DIR / "claude-proxy.log"
-
-proxy_process: subprocess.Popen | None = None
-proxy_log_handle = None
-
-
-def proxy_is_running() -> bool:
-    try:
-        req = urllib.request.Request(f"{PROXY_URL}/health", method="GET")
-        with urllib.request.urlopen(req, timeout=3):
-            return True
-    except (urllib.error.URLError, OSError):
-        return False
-
-
-def start_proxy() -> subprocess.Popen | None:
-    global proxy_process, proxy_log_handle
-
-    if proxy_is_running():
-        log.info("proxy already running")
-        return None
-
-    PROXY_LOG_DIR.mkdir(parents=True, exist_ok=True)
-    proxy_log_handle = open(PROXY_LOG_FILE, "a")
-
-    log.info("starting claude-max-api-proxy...")
-    proxy_process = subprocess.Popen(
-        ["node", PROXY_SCRIPT],
-        stdout=proxy_log_handle,
-        stderr=proxy_log_handle,
-    )
-    time.sleep(2)
-
-    if proxy_is_running():
-        log.info("proxy started (pid %d)", proxy_process.pid)
-    else:
-        log.warning("proxy started but health check failed — it may still be booting")
-
-    return proxy_process
-
-
-def stop_proxy():
-    global proxy_process, proxy_log_handle
-    if proxy_process is not None:
-        log.info("stopping proxy (pid %d)", proxy_process.pid)
-        proxy_process.terminate()
-        try:
-            proxy_process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            proxy_process.kill()
-        proxy_process = None
-    if proxy_log_handle is not None:
-        proxy_log_handle.close()
-        proxy_log_handle = None
-
-
-atexit.register(stop_proxy)
-
 # --- LLM client ---
 
-llm = OpenAI(base_url=f"{PROXY_URL}/v1", api_key="not-needed")
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+DEFAULT_MODEL = "deepseek/deepseek-chat"
+
+llm = OpenAI(
+    base_url=OPENROUTER_BASE_URL,
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+)
 
 
 _MAX_TOOL_ITERATIONS = 10
@@ -118,7 +58,7 @@ async def chat(messages: list[dict], on_status: OnStatus | None = None) -> str:
         try:
             resp = await asyncio.to_thread(
                 llm.chat.completions.create,
-                model="claude-sonnet-4",
+                model=DEFAULT_MODEL,
                 messages=full_messages,
                 tools=tools if tools else None,
             )
@@ -272,15 +212,14 @@ async def handle_thread_message(message: discord.Message):
 
 
 def main():
-    start_proxy()
     token = os.getenv("DISCORD_BOT_TOKEN")
     if not token:
         log.error("DISCORD_BOT_TOKEN not set in .env")
         raise SystemExit(1)
-    try:
-        client.run(token, log_handler=None)
-    finally:
-        stop_proxy()
+    if not os.getenv("OPENROUTER_API_KEY"):
+        log.error("OPENROUTER_API_KEY not set in .env")
+        raise SystemExit(1)
+    client.run(token, log_handler=None)
 
 
 if __name__ == "__main__":
