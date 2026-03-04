@@ -14,7 +14,7 @@ RUN cd apps/web && bun install --frozen-lockfile
 
 # Copy web source and build
 COPY apps/web/ ./apps/web/
-RUN cd apps/web && bun run build
+RUN cd apps/web && bunx vite build
 
 FROM nginx:alpine
 COPY --from=build /app/apps/web/dist /usr/share/nginx/html
