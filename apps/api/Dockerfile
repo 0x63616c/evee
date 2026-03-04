@@ -11,4 +11,4 @@ COPY . .
 ENV NODE_ENV=production
 EXPOSE 4201
 
-CMD ["bun", "run", "src/index.ts"]
+CMD ["bun", "run", "start.ts"]

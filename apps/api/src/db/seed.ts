@@ -8,7 +8,7 @@ const defaultChannels = [
   { slug: 'research', name: 'Research' },
 ];
 
-async function seed() {
+export async function seed() {
   for (const ch of defaultChannels) {
     await db
       .insert(channels)
@@ -26,9 +26,11 @@ async function seed() {
   );
 }
 
-seed()
-  .then(() => process.exit(0))
-  .catch((err) => {
-    console.error('Seed failed:', err);
-    process.exit(1);
-  });
+if (import.meta.main) {
+  seed()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error('Seed failed:', err);
+      process.exit(1);
+    });
+}
