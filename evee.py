@@ -196,7 +196,8 @@ def format_thread_name() -> str:
     ampm = now.strftime("%p").lower()
     month = now.strftime("%b").lower()
     day = now.day
-    return f"{month} {day} - {hour}:{minute}{ampm}"
+    year = now.year
+    return f"{month} {day}, {year} - {hour}:{minute}{ampm}"
 
 
 # --- Discord bot ---
