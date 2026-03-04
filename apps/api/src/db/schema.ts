@@ -6,3 +6,31 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
+
+export const channels = pgTable('channels', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  slug: text('slug').notNull().unique(),
+  name: text('name').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const threads = pgTable('threads', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  channelId: varchar('channel_id', { length: 255 })
+    .notNull()
+    .references(() => channels.id),
+  name: text('name').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const messages = pgTable('messages', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  threadId: varchar('thread_id', { length: 255 })
+    .notNull()
+    .references(() => threads.id),
+  role: text('role').notNull(), // user | assistant | tool
+  content: text('content').notNull(),
+  toolCallId: text('tool_call_id'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
