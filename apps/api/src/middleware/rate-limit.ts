@@ -24,7 +24,7 @@ type RequestRecord = {
  * We intentionally do NOT fall back to X-Real-IP because kamal-proxy does
  * not set it, so it would only ever contain a client-spoofed value.
  */
-export function getClientIp(c: Context): string {
+function getClientIp(c: Context): string {
   return c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
 }
 

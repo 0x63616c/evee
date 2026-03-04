@@ -4,14 +4,14 @@ import { Counter, Histogram, Registry } from 'prom-client';
 export const registry = new Registry();
 
 // HTTP metrics
-export const httpRequestsTotal = new Counter({
+const httpRequestsTotal = new Counter({
   name: 'http_requests_total',
   help: 'Total number of HTTP requests',
   labelNames: ['method', 'route', 'status'] as const,
   registers: [registry],
 });
 
-export const httpRequestDuration = new Histogram({
+const httpRequestDuration = new Histogram({
   name: 'http_request_duration_seconds',
   help: 'HTTP request duration in seconds',
   labelNames: ['method', 'route', 'status'] as const,
