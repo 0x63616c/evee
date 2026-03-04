@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-Evee is a well-structured MVP Discord bot (~425 LOC across 4 Python files) with clean separation between bot logic, LLM client, and tool system. The codebase is concise and readable. Main areas for improvement: no tests, no linter/type checking config, global mutable state in proxy management, and potential SSRF in the URL fetcher tool.
+Evee is a well-structured MVP Discord bot (~425 LOC across 4 Python files) with clean separation between bot logic, LLM client, and tool system. The codebase is concise and readable. Main areas for improvement: no type checking config and potential SSRF in the URL fetcher tool.
 
 ---
 
@@ -17,17 +17,17 @@ Evee is a well-structured MVP Discord bot (~425 LOC across 4 Python files) with 
 
 | # | Category | Score | Issues | Severity |
 |---|----------|-------|--------|----------|
-| 1 | Security | 8.3/10 | 3 | C:0 H:1 M:1 L:1 |
+| 1 | Security | 8.3/10 | 2 | C:0 H:1 M:0 L:1 |
 | 2 | Build | 7.0/10 | 3 | C:0 H:0 M:3 L:0 |
-| 3 | Code Principles | 8.5/10 | 2 | C:0 H:0 M:2 L:1 |
+| 3 | Code Principles | 9.0/10 | 2 | C:0 H:0 M:1 L:1 |
 | 4 | Code Quality | 9.6/10 | 2 | C:0 H:0 M:0 L:2 |
 | 5 | Dependencies | 10.0/10 | 0 | - |
 | 6 | Dead Code | 10.0/10 | 0 | - |
-| 7 | Observability | 8.3/10 | 3 | C:0 H:0 M:2 L:2 |
-| 8 | Concurrency | 9.3/10 | 2 | C:0 H:0 M:1 L:1 |
-| 9 | Lifecycle | 9.3/10 | 2 | C:0 H:0 M:0 L:2 |
+| 7 | Observability | 8.8/10 | 3 | C:0 H:0 M:2 L:1 |
+| 8 | Concurrency | 9.5/10 | 1 | C:0 H:0 M:0 L:1 |
+| 9 | Lifecycle | 10.0/10 | 0 | - |
 
-**Severity Summary:** Critical: 0 | High: 1 | Medium: 9 | Low: 8
+**Severity Summary:** Critical: 0 | High: 1 | Medium: 3 | Low: 5
 
 ---
 
@@ -48,8 +48,7 @@ Evee is a well-structured MVP Discord bot (~425 LOC across 4 Python files) with 
 | # | Severity | Finding | Location | Recommendation |
 |---|----------|---------|----------|----------------|
 | S1 | HIGH | No URL validation in `fetch_url` — accepts any URL including internal IPs (`http://169.254.169.254`, `file://`, `http://localhost`), enabling SSRF if LLM is prompt-injected | `tools/fetch_url.py:32` | Validate URL scheme (https/http only) and reject private/internal IP ranges before fetching |
-| S2 | MEDIUM | Hardcoded absolute filesystem path for proxy script | `evee.py:36` | Use environment variable or relative path resolution |
-| S3 | LOW | Broad exception handler in `execute_tool` could mask security-relevant errors | `tools/__init__.py:36` | Log at WARNING level minimum; currently uses `log.exception` which is adequate |
+| S2 | LOW | Broad exception handler in `execute_tool` could mask security-relevant errors | `tools/__init__.py:36` | Log at WARNING level minimum; currently uses `log.exception` which is adequate |
 
 ### 2. Build
 
@@ -63,9 +62,8 @@ Evee is a well-structured MVP Discord bot (~425 LOC across 4 Python files) with 
 
 | # | Severity | Finding | Location | Recommendation |
 |---|----------|---------|----------|----------------|
-| P1 | MEDIUM | Global mutable state: `proxy_process` and `proxy_log_handle` modified via `global` keyword — violates project's own "no global variables" rule | `evee.py:40-41`, `evee.py:54`, `evee.py:80` | Encapsulate proxy management in a class (e.g., `ProxyManager`) with instance state |
-| P2 | MEDIUM | Module-level side effects: `_discover_tools()` runs at import time (`tools/__init__.py:60`), `load_dotenv()` runs at module level (`evee.py:20`) | `tools/__init__.py:60`, `evee.py:20` | Move side effects into explicit init functions or `main()` |
-| P3 | LOW | Magic numbers: `100` (history limit), `2000` (Discord limit), `3` (health check timeout), `5` (proxy kill timeout) used inline | Various | Extract to named constants at module level |
+| P1 | MEDIUM | Module-level side effects: `_discover_tools()` runs at import time (`tools/__init__.py:60`), `load_dotenv()` runs at module level (`evee.py:20`) | `tools/__init__.py:60`, `evee.py:20` | Move side effects into explicit init functions or `main()` |
+| P2 | LOW | Magic numbers: `100` (history limit), `2000` (Discord limit) used inline | Various | Extract to named constants at module level |
 
 ### 4. Code Quality
 
@@ -89,34 +87,27 @@ No dead code, unused imports, or commented-out code found. Codebase is clean.
 | O1 | MEDIUM | No structured logging — using basic `format="%(asctime)s %(levelname)s %(message)s"` | `evee.py:25-31` | Consider `structlog` or at minimum add `%(name)s` to format |
 | O2 | MEDIUM | LLM calls lack instrumentation — no logging of token usage, latency, model, or tool calls made | `evee.py:112-170` | Log request/response metadata (model, tokens, duration, tool names) |
 | O3 | LOW | No log rotation configured for `~/.local/log/evee.log` — will grow unbounded | `evee.py:22-31` | Use `RotatingFileHandler` with a size limit |
-| O4 | LOW | Proxy health check result not logged on startup failure path | `evee.py:74` | Add `log.warning` with error details when health check fails |
 
 ### 8. Concurrency
 
 | # | Severity | Finding | Location | Recommendation |
 |---|----------|---------|----------|----------------|
-| C1 | MEDIUM | `time.sleep(2)` blocks the main thread during startup — if called from async context, would block event loop | `evee.py:69` | Currently safe because `start_proxy()` runs before `client.run()`, but fragile if refactored |
-| C2 | LOW | No message deduplication — rapid messages can trigger concurrent `chat()` calls with overlapping tool execution | `evee.py:226-268` | Documented as intentional MVP trade-off; add queue/lock when it becomes a problem |
+| C1 | LOW | No message deduplication — rapid messages can trigger concurrent `chat()` calls with overlapping tool execution | `evee.py:226-268` | Documented as intentional MVP trade-off; add queue/lock when it becomes a problem |
 
 ### 9. Lifecycle
 
 | # | Severity | Finding | Location | Recommendation |
 |---|----------|---------|----------|----------------|
-| L1 | LOW | Redundant cleanup: both `atexit.register(stop_proxy)` and `finally: stop_proxy()` in `main()` — `stop_proxy` is safe to call twice, but the duplication is unnecessary | `evee.py:94`, `evee.py:283` | Remove atexit registration; the try/finally in main() is sufficient |
-| L2 | LOW | Proxy log file handle (`proxy_log_handle`) opened in `start_proxy` but only closed in `stop_proxy` — if `start_proxy` is called without a matching `stop_proxy`, handle leaks | `evee.py:61`, `evee.py:89-91` | Use context manager pattern or ensure handle is always cleaned up |
+No proxy-related lifecycle issues remain after migration to OpenRouter.
 
 ---
 
 ## Recommended Actions (Priority Order)
 
 1. **[HIGH] Fix SSRF in fetch_url** — Add URL scheme validation and block private IP ranges before `httpx.get()`
-2. **[MEDIUM] Add ruff config** — Add `[tool.ruff]` to `pyproject.toml` for linting and formatting
-3. **[MEDIUM] Refactor proxy management** — Extract `proxy_process`/`proxy_log_handle` globals into a `ProxyManager` class
-4. **[MEDIUM] Add basic tests** — `split_message`, `format_thread_name`, and the tool registry are easily unit-testable
-5. **[MEDIUM] Add LLM call logging** — Log token usage, latency, and tool calls for observability
-6. **[MEDIUM] Externalize proxy path** — Move `PROXY_SCRIPT` to `.env` or derive from config
-7. **[LOW] Add log rotation** — Switch to `RotatingFileHandler` for `evee.log`
-8. **[LOW] Extract magic numbers** — Define `HISTORY_LIMIT`, `DISCORD_MSG_LIMIT`, etc. as module constants
+2. **[MEDIUM] Add LLM call logging** — Log token usage, latency, and tool calls for observability
+3. **[LOW] Add log rotation** — Switch to `RotatingFileHandler` for `evee.log`
+4. **[LOW] Extract magic numbers** — Define `HISTORY_LIMIT`, `DISCORD_MSG_LIMIT`, etc. as module constants
 
 ---
 
