@@ -6,7 +6,7 @@ docker_compose('./docker-compose.yml')
 
 local_resource(
   'db-migrate',
-  cmd='cd apps/api && bunx drizzle-kit migrate',
+  cmd='cd apps/api && bun --env-file=../../.env x drizzle-kit migrate',
   resource_deps=['postgres'],
   labels=['infra'],
 )
@@ -14,7 +14,7 @@ local_resource(
 db_reset_cmd = ' && '.join([
   'docker compose exec -T postgres psql -U postgres -c "DROP DATABASE IF EXISTS evee WITH (FORCE);"',
   'docker compose exec -T postgres psql -U postgres -c "CREATE DATABASE evee;"',
-  'cd apps/api && bunx drizzle-kit migrate',
+  'cd apps/api && bun --env-file=../../.env x drizzle-kit migrate',
 ])
 
 local_resource(

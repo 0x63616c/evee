@@ -33,7 +33,7 @@ EOF
 echo "Created .sops.yaml"
 
 # Encrypt .env files
-for env_file in .env apps/api/.env; do
+for env_file in .env; do
   if [[ -f "$env_file" ]]; then
     enc_file="${env_file}.enc"
     sops --encrypt "$env_file" > "$enc_file"

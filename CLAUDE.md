@@ -71,16 +71,17 @@ cd apps/api && bun run dev                # API on port 4201
 cd apps/web && bun run dev                # Web on port 4200
 ```
 
-## Environment Variables (apps/api)
+## Environment Variables
 
-Copy `apps/api/.env.example` to `apps/api/.env`:
+Copy `.env.example` to `.env` at the repo root:
 
 | Variable | Description |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection URL |
 | `JWT_SECRET` | Secret for signing JWT tokens |
-| `PORT` | API port (default: `4201`) |
-| `OPENROUTER_API_KEY` | OpenRouter API key (copy from root `.env`) |
+| `OPENROUTER_API_KEY` | OpenRouter API key |
+
+All scripts in `apps/api/package.json` read from the root `.env` via `--env-file=../../.env`.
 
 ## Common Commands (apps/api)
 
@@ -107,7 +108,7 @@ bun run lint:fix   # Run Biome lint and auto-fix
 
 `.env` files are encrypted with SOPS + age and committed as `.env.enc`. Never commit plaintext `.env` files.
 
-- Encrypt: `sops -e apps/api/.env > apps/api/.env.enc`
+- Encrypt: `sops -e .env > .env.enc`
 - Decrypt all: `bash scripts/decrypt-secrets.sh`
 - Age private key is stored in 1Password as `evee age private key`
 
