@@ -47,11 +47,11 @@ Channels (pre-defined, seeded) → Threads (one per conversation) → Messages (
 apps/api/     # Hono API server
 apps/web/     # React + Vite frontend
 docs/         # Project documentation
+prompts/      # System prompt (loaded from disk each LLM call)
 infra/        # Infrastructure config (empty — future use)
 libs/         # Shared libraries (empty — future use)
 sdks/         # Client SDKs (empty — future use)
 tools/        # Internal tooling (empty — future use)
-_python_archive/  # Archived Python bot (evee.py, tools/, prompts/)
 ```
 
 ## Local Development (Tilt)
@@ -127,7 +127,7 @@ bun run lint:fix   # Run Biome lint and auto-fix
 
 ## System Prompt
 
-Evee's personality is in `_python_archive/prompts/SYSTEM.md`. When porting to TS, this file will move to `prompts/SYSTEM.md` and be loaded from disk on each LLM call (so edits take effect without restart).
+Evee's personality is in `prompts/SYSTEM.md`, loaded from disk on each LLM call (so edits take effect without restart).
 
 ## Documentation
 
