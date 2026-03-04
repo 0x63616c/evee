@@ -1,8 +1,9 @@
+import { useMutation } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { FieldInput } from '@/components/ui/field';
-import { trpc } from '@/lib/trpc';
+import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 
 export const Route = createFileRoute('/signup')({
@@ -17,13 +18,20 @@ function SignupPage() {
   const { setToken } = useAuthStore();
   const navigate = useNavigate();
 
-  const register = trpc.auth.register.useMutation({
+  const register = useMutation({
+    async mutationFn(input: { email: string; password: string }) {
+      const res = await api.api.auth.signup.$post({ json: input });
+      if (!res.ok) {
+        throw new Error('Something went wrong. Please try again.');
+      }
+      return await res.json();
+    },
     onSuccess(data) {
       setToken(data.token);
       navigate({ to: '/dashboard' });
     },
-    onError() {
-      toast.error('Something went wrong. Please try again.');
+    onError(error) {
+      toast.error(error.message);
     },
   });
 

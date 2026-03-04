@@ -1,9 +1,9 @@
+import { useMutation } from '@tanstack/react-query';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { TRPCClientError } from '@trpc/client';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { FieldInput } from '@/components/ui/field';
-import { trpc } from '@/lib/trpc';
+import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 
 export const Route = createFileRoute('/login')({
@@ -17,19 +17,20 @@ function LoginPage() {
   const { setToken } = useAuthStore();
   const navigate = useNavigate();
 
-  const login = trpc.auth.login.useMutation({
+  const login = useMutation({
+    async mutationFn(input: { email: string; password: string }) {
+      const res = await api.api.auth.login.$post({ json: input });
+      if (!res.ok) {
+        throw new Error('Invalid email or password.');
+      }
+      return await res.json();
+    },
     onSuccess(data) {
       setToken(data.token);
       navigate({ to: '/dashboard' });
     },
     onError(error) {
-      if (error instanceof TRPCClientError && !error.data) {
-        toast.error(
-          'Connection error. Please check your network and try again.',
-        );
-      } else {
-        toast.error('Invalid email or password.');
-      }
+      toast.error(error.message);
     },
   });
 
