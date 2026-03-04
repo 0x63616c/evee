@@ -4,7 +4,7 @@
 #
 # What it does:
 #   1. System update
-#   2. Firewall (ufw) — allow SSH, HTTP, HTTPS only
+#   2. Firewall (ufw) — allow SSH, HTTP, HTTPS, Coolify (8000)
 #   3. fail2ban — ban IPs that brute-force SSH
 #   4. SSH hardening — disable password auth, key-only
 #   5. Install Coolify
@@ -21,8 +21,7 @@ ufw default allow outgoing
 ufw allow 22/tcp   # SSH
 ufw allow 80/tcp   # HTTP (Traefik)
 ufw allow 443/tcp  # HTTPS (Traefik)
-# Port 8000 (Coolify UI) is intentionally NOT opened.
-# Access it via SSH tunnel: ssh -L 8000:localhost:8000 root@<IP>
+ufw allow 8000/tcp # Coolify UI + GitHub webhooks (TODO: move behind subdomain, see EVE-21)
 ufw --force enable
 
 echo "==> Installing fail2ban"
@@ -41,9 +40,6 @@ curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash
 echo ""
 echo "==> Setup complete!"
 echo ""
-echo "Coolify is running but port 8000 is firewalled."
-echo "To access the UI, run this on your local machine:"
-echo ""
-echo "  bash scripts/coolify-tunnel.sh"
-echo ""
-echo "Then open http://localhost:8000 in your browser."
+echo "Coolify is running at http://<IP>:8000"
+echo "Port 8000 is open for GitHub webhooks."
+echo "See EVE-21 to move Coolify behind a subdomain and close 8000."
