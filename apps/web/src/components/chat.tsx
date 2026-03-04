@@ -3,7 +3,9 @@ import {
   ComposerPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
+  type TextMessagePartProps,
 } from '@assistant-ui/react';
+import { MarkdownTextPrimitive } from '@assistant-ui/react-markdown';
 import {
   AssistantChatTransport,
   useChatRuntime,
@@ -23,10 +25,6 @@ interface ChatProps {
 
 export function Chat({ channelId, threadId, threadName }: ChatProps) {
   const queryClient = useQueryClient();
-  const channelIdRef = useRef(channelId);
-  const threadIdRef = useRef(threadId);
-  channelIdRef.current = channelId;
-  threadIdRef.current = threadId;
 
   const historyQuery = useQuery({
     queryKey: ['messages', threadId],
@@ -73,21 +71,12 @@ export function Chat({ channelId, threadId, threadName }: ChatProps) {
   );
 }
 
-interface ChatRuntimeProps {
-  channelId: string;
-  threadId?: string;
-  threadName?: string;
+interface ChatRuntimeProps extends ChatProps {
   initialMessages: UIMessage[];
   onFinish: () => void;
 }
 
-function ChatRuntime({
-  channelId,
-  threadId,
-  threadName,
-  initialMessages,
-  onFinish,
-}: ChatRuntimeProps) {
+function ChatRuntime({ channelId, threadId, threadName, initialMessages, onFinish }: ChatRuntimeProps) {
   const channelIdRef = useRef(channelId);
   const threadIdRef = useRef(threadId);
   channelIdRef.current = channelId;
@@ -102,14 +91,15 @@ function ChatRuntime({
         if (token) return { Authorization: `Bearer ${token}` };
         return {};
       },
-      fetch: async (url, init) => {
+      // biome-ignore lint/suspicious/noExplicitAny: Bun extends fetch with preconnect; cast needed
+      fetch: (async (url: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
         const res = await globalThis.fetch(url, init);
         const newThreadId = res.headers.get('X-Thread-Id');
         if (newThreadId) {
           threadIdRef.current = newThreadId;
         }
         return res;
-      },
+      }) as unknown as typeof fetch,
       prepareSendMessagesRequest: async (options) => {
         const lastMessage = options.messages[options.messages.length - 1];
         const textPart = lastMessage?.parts?.find((p) => p.type === 'text');
@@ -170,6 +160,12 @@ function ChatRuntime({
   );
 }
 
+// MarkdownTextPrimitive reads text from message part context, not props.
+// This wrapper provides the correct TextMessagePartComponent signature.
+function MarkdownText(_: TextMessagePartProps) {
+  return <MarkdownTextPrimitive />;
+}
+
 function UserMessage() {
   return (
     <div className="flex justify-end py-2">
@@ -183,8 +179,8 @@ function UserMessage() {
 function AssistantMessage() {
   return (
     <div className="flex justify-start py-2">
-      <div className="max-w-[80%] rounded-lg bg-muted px-3 py-2 text-sm">
-        <MessagePrimitive.Content />
+      <div className="max-w-[80%] rounded-lg bg-muted px-3 py-2 text-sm prose prose-sm dark:prose-invert">
+        <MessagePrimitive.Content components={{ Text: MarkdownText }} />
       </div>
     </div>
   );
