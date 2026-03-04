@@ -15,6 +15,13 @@
       "when": 1772594124580,
       "tag": "0001_superb_korg",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772608034244,
+      "tag": "0002_dashing_adam_warlock",
+      "breakpoints": true
     }
   ]
 }
