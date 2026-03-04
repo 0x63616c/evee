@@ -77,7 +77,9 @@ jobs:
           context: .
           file: apps/api/Dockerfile
           push: true
-          tags: ghcr.io/0x63616c/evee-api:latest
+          tags: |
+            ghcr.io/0x63616c/evee-api:latest
+            ghcr.io/0x63616c/evee-api:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - uses: ruby/setup-ruby@v1
@@ -116,7 +118,9 @@ jobs:
           context: .
           file: apps/web/Dockerfile
           push: true
-          tags: ghcr.io/0x63616c/evee-web:latest
+          tags: |
+            ghcr.io/0x63616c/evee-web:latest
+            ghcr.io/0x63616c/evee-web:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - uses: ruby/setup-ruby@v1
