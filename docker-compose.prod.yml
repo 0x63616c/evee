@@ -18,6 +18,7 @@ services:
       context: ./apps/api
       dockerfile: Dockerfile
     environment:
+      SERVICE_FQDN_API_4201: https://api.worldwidewebb.co
       DATABASE_URL: ${DATABASE_URL:?}
       JWT_SECRET: ${JWT_SECRET:?}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
@@ -37,6 +38,8 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         VITE_API_URL: ${VITE_API_URL:?}
+    environment:
+      SERVICE_FQDN_WEB: https://evee.worldwidewebb.co
     depends_on:
       - api
 
