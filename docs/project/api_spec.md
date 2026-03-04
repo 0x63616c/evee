@@ -5,6 +5,7 @@
 ## Base URL
 
 `http://localhost:4201` (development)
+`https://api.worldwidewebb.co` (production)
 
 ## Authentication
 
@@ -16,7 +17,7 @@ All protected routes require `Authorization: Bearer <jwt>` header. JWTs are HS25
 
 | Method | Path | Input | Output | Notes |
 |--------|------|-------|--------|-------|
-| POST | `/api/auth/register` | `{ email, password }` | `{ token }` | Creates user, returns JWT |
+| POST | `/api/auth/signup` | `{ email, password }` | `{ token }` | Creates user, returns JWT |
 | POST | `/api/auth/login` | `{ email, password }` | `{ token }` | Verifies credentials, returns JWT |
 
 **Input constraints:**
@@ -24,7 +25,7 @@ All protected routes require `Authorization: Bearer <jwt>` header. JWTs are HS25
 - `password`: minimum 8 characters
 
 **Error codes:**
-- `409` — email already registered (register)
+- `409` — email already registered (signup)
 - `401` — invalid credentials (login)
 
 ---
@@ -33,17 +34,20 @@ All protected routes require `Authorization: Bearer <jwt>` header. JWTs are HS25
 
 | Method | Path | Input | Output | Notes |
 |--------|------|-------|--------|-------|
-| POST | `/api/chat` | `{ threadId, message }` | SSE stream | Vercel AI SDK data stream format |
+| POST | `/api/chat` | `{ channelId, threadId?, message }` | SSE stream | Vercel AI SDK data stream format |
 
-**Stream format:** Vercel AI SDK protocol (compatible with `useChat` hook).
+**Response headers:**
+- `X-Thread-Id` — the thread ID (new or existing), used by the client to maintain thread continuity
 
 **Behaviour:**
-- Loads thread history from DB (up to 100 messages)
-- Appends user message to DB
+- Creates new thread if no `threadId` provided (auto-named from first 50 chars of message)
+- Saves user message to DB
+- Loads thread history (up to 100 messages)
+- Loads system prompt from disk (live-editable)
 - Calls LLM via streamText (DeepSeek V3 via OpenRouter)
-- Executes tool calls as they arrive
+- Executes tool calls as they arrive (max 10 steps)
 - Streams final text response
-- Persists assistant message to DB
+- Persists assistant and tool messages to DB
 
 ---
 
@@ -52,15 +56,14 @@ All protected routes require `Authorization: Bearer <jwt>` header. JWTs are HS25
 | Method | Path | Input | Output | Notes |
 |--------|------|-------|--------|-------|
 | GET | `/api/channels` | — | `{ channels: Channel[] }` | Returns all seeded channels |
-| GET | `/api/channels/:id` | — | `{ channel: Channel }` | Single channel by ID |
 
 **Channel shape:**
 
 | Field | Type | Description |
 |-------|------|-------------|
 | id | string | TypeID with `ch_` prefix |
+| slug | string | URL-safe identifier (e.g. `general`) |
 | name | string | Display name |
-| description | string | Short description |
 | createdAt | string | ISO-8601 |
 
 ---
@@ -69,20 +72,25 @@ All protected routes require `Authorization: Bearer <jwt>` header. JWTs are HS25
 
 | Method | Path | Input | Output | Notes |
 |--------|------|-------|--------|-------|
-| GET | `/api/channels/:channelId/threads` | — | `{ threads: Thread[] }` | User's threads in channel |
-| POST | `/api/channels/:channelId/threads` | `{ name? }` | `{ thread: Thread }` | Create new thread |
-| GET | `/api/threads/:id` | — | `{ thread: Thread }` | Single thread |
-| GET | `/api/threads/:id/messages` | — | `{ messages: Message[] }` | Thread message history |
+| GET | `/api/threads?channelId=x` | query: `channelId` | `{ threads: Thread[] }` | Threads for a channel, sorted by updatedAt desc |
 
 **Thread shape:**
 
 | Field | Type | Description |
 |-------|------|-------------|
-| id | string | TypeID with `thr_` prefix |
+| id | string | TypeID with `th_` prefix |
 | channelId | string | Parent channel |
-| userId | string | Owner |
 | name | string | Auto-set from first message |
 | createdAt | string | ISO-8601 |
+| updatedAt | string | ISO-8601 |
+
+---
+
+### Messages (protected)
+
+| Method | Path | Input | Output | Notes |
+|--------|------|-------|--------|-------|
+| GET | `/api/messages?threadId=x` | query: `threadId` | `{ messages: Message[] }` | Messages for a thread, sorted by createdAt asc |
 
 **Message shape:**
 
@@ -92,7 +100,16 @@ All protected routes require `Authorization: Bearer <jwt>` header. JWTs are HS25
 | threadId | string | Parent thread |
 | role | enum | `user` \| `assistant` \| `tool` |
 | content | string | Message text or tool JSON |
+| toolCallId | string? | Tool call ID (for tool messages) |
 | createdAt | string | ISO-8601 |
+
+---
+
+### User (protected)
+
+| Method | Path | Input | Output | Notes |
+|--------|------|-------|--------|-------|
+| GET | `/api/user/me` | — | `{ id, email, createdAt }` | Current authenticated user |
 
 ---
 
@@ -107,7 +124,7 @@ All protected routes require `Authorization: Bearer <jwt>` header. JWTs are HS25
 The frontend uses the Hono `hc` typed client. The API exports `AppType`:
 
 ```
-import type { AppType } from '@evee/api'
+import type { AppType } from '../../../api/src/index.ts'
 const client = hc<AppType>('http://localhost:4201')
 ```
 
@@ -116,4 +133,4 @@ All endpoint types are inferred — no separate schema file needed.
 ## Maintenance
 
 **Update when:** Adding routes, changing input/output shapes, modifying auth requirements.
-**Verify:** Route paths match `apps/api/src/routers/` files, shapes match Drizzle schema.
+**Verify:** Route paths match `apps/api/src/routers/` and `apps/api/src/routes/` files, shapes match Drizzle schema.

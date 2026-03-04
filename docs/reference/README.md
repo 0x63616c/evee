@@ -30,13 +30,27 @@ Location: [guides/](guides/)
 
 How-to guides for common development tasks.
 
-## Existing Decisions (Documented in CLAUDE.md)
+## Manuals
+
+Location: [manuals/](manuals/)
+
+In-depth reference for specific subsystems.
+
+## Research
+
+Location: [research/](research/)
+
+Investigation notes and findings.
+
+## Key Decisions
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | LLM provider | OpenRouter + DeepSeek V3 | Cost-effective, OpenAI-compatible API |
-| Bot framework | discord.py | Mature, well-documented, async-native |
-| Tool discovery | Decorator + pkgutil auto-import | Zero-config tool registration |
+| Web framework | Hono (API) + React (frontend) | Lightweight, typed RPC via `hc` |
+| Auth | JWT via jose + protectedRouter() | Auto-protect all routes by default |
+| Chat UI | assistant-ui primitives | Purpose-built for AI chat, works with AI SDK |
 | System prompt | Read from disk each call | Live-editable without restart |
 | Thread model | New thread per channel message | Clean conversation isolation |
-| SSRF protection | URL validation + IP blocking | Prevent prompt injection attacks via fetch_url |
+| SSRF protection | URL validation + IP blocking | Prevent prompt injection via fetch_url |
+| IDs | TypeID (typeid-js) | Prefixed, time-sortable, URL-safe |

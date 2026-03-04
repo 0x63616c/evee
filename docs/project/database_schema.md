@@ -4,7 +4,7 @@
 
 ## Engine
 
-PostgreSQL 16. ORM: Drizzle ORM. Migrations: `drizzle-kit` in `apps/api/src/db/`.
+PostgreSQL 16. ORM: Drizzle ORM. Migrations: `drizzle-kit` in `apps/api/drizzle/`.
 
 ## ID Convention
 
@@ -14,7 +14,7 @@ All primary keys use **TypeID** — prefixed, time-sortable, URL-safe strings.
 |-------|--------|---------|
 | users | `user_` | `user_01j8...` |
 | channels | `ch_` | `ch_01j8...` |
-| threads | `thr_` | `thr_01j8...` |
+| threads | `th_` | `th_01j8...` |
 | messages | `msg_` | `msg_01j8...` |
 
 ## Tables
@@ -30,26 +30,26 @@ All primary keys use **TypeID** — prefixed, time-sortable, URL-safe strings.
 
 ### channels
 
-Pre-defined categories. Not user-created.
+Pre-defined categories seeded on first run. Not user-created.
 
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
 | id | varchar(255) | PK | TypeID `ch_` |
-| name | varchar(100) | NOT NULL, UNIQUE | e.g. "general", "code" |
-| description | text | | Short description |
+| slug | text | NOT NULL, UNIQUE | URL-safe identifier (e.g. `general`) |
+| name | text | NOT NULL | Display name |
 | created_at | timestamp | NOT NULL, DEFAULT NOW() | |
 
 ### threads
 
-One thread = one conversation. Created when a user sends the first message.
+One thread = one conversation. Created when a user sends the first message via `/api/chat`.
 
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
-| id | varchar(255) | PK | TypeID `thr_` |
-| channel_id | varchar(255) | NOT NULL, FK → channels.id | |
-| user_id | varchar(255) | NOT NULL, FK → users.id | |
-| name | varchar(255) | | Auto-set from first user message |
+| id | varchar(255) | PK | TypeID `th_` |
+| channel_id | varchar(255) | NOT NULL, FK -> channels.id | |
+| name | text | NOT NULL | Auto-set from first 50 chars of user message |
 | created_at | timestamp | NOT NULL, DEFAULT NOW() | |
+| updated_at | timestamp | NOT NULL, DEFAULT NOW() | Bumped on each new message |
 
 ### messages
 
@@ -58,35 +58,30 @@ Stores all turns: user input, assistant output, and tool interactions.
 | Column | Type | Constraints | Notes |
 |--------|------|-------------|-------|
 | id | varchar(255) | PK | TypeID `msg_` |
-| thread_id | varchar(255) | NOT NULL, FK → threads.id | |
-| role | varchar(20) | NOT NULL | `user` \| `assistant` \| `tool` |
+| thread_id | varchar(255) | NOT NULL, FK -> threads.id | |
+| role | text | NOT NULL | `user` \| `assistant` \| `tool` |
 | content | text | NOT NULL | Text or JSON (tool calls) |
+| tool_call_id | text | nullable | Links tool result to its call |
 | created_at | timestamp | NOT NULL, DEFAULT NOW() | |
 
 ## Relationships
 
 ```
-users (1) ──< threads (N)
-channels (1) ──< threads (N)
-threads (1) ──< messages (N)
+channels (1) --< threads (N)
+threads (1) --< messages (N)
 ```
 
-## Indexes (planned)
-
-| Table | Column(s) | Type | Reason |
-|-------|-----------|------|--------|
-| threads | channel_id, user_id | composite | Filter user threads per channel |
-| messages | thread_id, created_at | composite | Paginate thread history |
+Note: threads have no user_id FK — this is a single-user app.
 
 ## Seed Data
 
-Channels are seeded on first run. Initial channels:
+Channels are seeded via `apps/api/src/db/seed.ts`. Default channels:
 
-| name | description |
-|------|-------------|
-| general | General conversation |
-| code | Code help and review |
-| research | Web search and research |
+| slug | name |
+|------|------|
+| general | General |
+| code | Code |
+| research | Research |
 
 ## Maintenance
 

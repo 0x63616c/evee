@@ -22,8 +22,8 @@ bun install --cwd apps/api
 bun install --cwd apps/web
 
 # 3. Create env file
-cp apps/api/.env.example apps/api/.env
-# Edit apps/api/.env — set JWT_SECRET and OPENROUTER_API_KEY
+cp .env.example .env
+# Edit .env -- set DATABASE_URL, JWT_SECRET, and OPENROUTER_API_KEY
 ```
 
 ## Development
@@ -41,25 +41,29 @@ Tilt hot-reloads `apps/api/src` and `apps/web/src` automatically.
 
 ## Environment Variables
 
-File: `apps/api/.env`
+File: `.env` (repo root)
 
 | Variable | Example | Required |
 |----------|---------|----------|
 | DATABASE_URL | `postgres://postgres:postgres@localhost:4210/evee` | Yes |
 | JWT_SECRET | `<random 32+ char string>` | Yes |
 | OPENROUTER_API_KEY | `sk-or-...` | Yes |
-| PORT | `4201` | No (default: 4201) |
 
 Generate JWT secret: `openssl rand -base64 32`
+
+All `apps/api` scripts read from root `.env` via `--env-file=../../.env`.
 
 ## Database
 
 ```bash
 # Run pending migrations
-cd apps/api && bunx drizzle-kit migrate
+cd apps/api && bun run db:migrate
 
 # Generate migration from schema changes
-cd apps/api && bunx drizzle-kit generate
+cd apps/api && bun run db:generate
+
+# Seed default channels
+cd apps/api && bun run db:seed
 
 # Reset database (via Tilt manual trigger)
 tilt trigger db-reset
@@ -79,11 +83,12 @@ docker compose exec postgres psql -U postgres -d evee
 
 ### Update system prompt
 
-Edit `apps/api/prompts/SYSTEM.md` — takes effect on next LLM call, no restart needed.
+Edit `prompts/SYSTEM.md` -- takes effect on next LLM call, no restart needed.
 
 ### Add a new LLM tool
 
-Create `apps/api/src/tools/<verb>_<noun>.ts` using the tool registry pattern. Register in `apps/api/src/tools/index.ts`.
+1. Create `apps/api/src/tools/<name>.ts` using Vercel AI SDK `tool()` helper
+2. Register in `apps/api/src/routes/chat.ts` tools object
 
 ## Logs
 
@@ -91,13 +96,12 @@ Create `apps/api/src/tools/<verb>_<noun>.ts` using the tool registry pattern. Re
 |--------|----------|
 | API (dev) | stdout (Tilt terminal) |
 | Web (dev) | stdout (Tilt terminal) |
-| Bot logs (legacy) | `~/.local/log/evee.log` |
 
 ## CI
 
 GitHub Actions runs on push/PR to `main`:
-- `biome check` (lint + format)
-- `vitest run` (unit tests)
+- `biome check` (lint + format) for both apps
+- `vitest run` (unit tests) for api and web separately
 
 ## Ports
 

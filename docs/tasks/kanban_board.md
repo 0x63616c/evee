@@ -7,8 +7,6 @@
 | Team | Evee |
 | Team ID | `e06f3241-8116-4a33-ad74-1773a49d754d` |
 | Team Key | `EVE` |
-| Next Epic Number | 5 |
-| Next Story Number | US014 |
 
 ## Epics Overview
 
@@ -16,44 +14,45 @@
 
 | Epic | Linear Project | Status | Priority |
 |------|---------------|--------|----------|
-| [Epic 4: Custom Web Chat UI](https://linear.app/evee/project/epic-4-custom-web-chat-ui-047c175b8da1) | 6bcfe217-c126-459d-950e-1d715adf3530 | Planned | High |
-| [Epic 1: Temporal Workflow Rewrite](https://linear.app/evee/project/epic-1-temporal-workflow-rewrite-388461faf1cd) | 539b3e48-2fc1-4d00-bafd-248f79bd79d7 | Planned | High |
-| [Epic 2: SQLite Logging](https://linear.app/evee/project/epic-2-sqlite-logging-62a5c8041277) | 1064daed-944a-4419-9bdc-f4c8c8b79995 | Planned | High |
-| [Epic 3: Discord Log Streaming](https://linear.app/evee/project/epic-3-discord-log-streaming-fb59a9a35905) | a224d4ef-9394-48c1-865f-def3464df05a | Planned | Medium |
+| [Epic 5: Hetzner VPS + Coolify Infrastructure](https://linear.app/evee/project/epic-5-hetzner-vps-coolify-infrastructure) | 6f591198 | In Progress | High |
+| [Epic 4: Custom Web Chat UI](https://linear.app/evee/project/epic-4-custom-web-chat-ui-047c175b8da1) | 6bcfe217 | Done | High |
+| [Epic 1: Temporal Workflow Rewrite](https://linear.app/evee/project/epic-1-temporal-workflow-rewrite-388461faf1cd) | 539b3e48 | Planned | High |
+| [Epic 2: SQLite Logging](https://linear.app/evee/project/epic-2-sqlite-logging-62a5c8041277) | 1064daed | Planned | High |
 
-> **Note:** Epic 3 (Discord Log Streaming) is likely superseded — Discord is retired. Archive when confirmed.
-
-## Epic Story Counters
-
-| Epic | Stories | Next Story | Status | Epic ID |
-|------|---------|-----------|--------|---------|
-| Epic 4: Custom Web Chat UI | EVE-9 to EVE-13 | US014 | In Progress | 6bcfe217 |
-| Epic 1: Temporal Workflow Rewrite | EVE-5 | — | Backlog | 539b3e48 |
-| Epic 2: SQLite Logging | — | — | Backlog | 1064daed |
-| Epic 3: Discord Log Streaming | — | — | Backlog | a224d4ef |
+> **Note:** Epic 3 (Discord Log Streaming) is superseded -- Discord is retired. Should be archived.
 
 ## Backlog
 
-### Epic 4: Custom Web Chat UI
+### Epic 5: Hetzner VPS + Coolify Infrastructure
 
 | Issue | Title | Priority | Status |
 |-------|-------|----------|--------|
-| [EVE-9](https://linear.app/evee/issue/EVE-9) | Replace tRPC with Hono RPC + protectedRouter pattern | High | Backlog |
-| [EVE-10](https://linear.app/evee/issue/EVE-10) | Channels, threads and messages — data model + sidebar | High | Backlog |
-| [EVE-11](https://linear.app/evee/issue/EVE-11) | Core chat — send message, get streaming AI response | High | Backlog |
-| [EVE-12](https://linear.app/evee/issue/EVE-12) | Tool calling — web search and URL fetch with live status | Medium | Backlog |
-| [EVE-13](https://linear.app/evee/issue/EVE-13) | Thread continuity — load and continue past conversations | Medium | Backlog |
+| [EVE-17](https://linear.app/evee/issue/EVE-17) | Configure DNS for worldwidewebb.co subdomains | Urgent | Backlog |
+| [EVE-20](https://linear.app/evee/issue/EVE-20) | Deploy evee to Coolify | Urgent | Backlog |
+| [EVE-21](https://linear.app/evee/issue/EVE-21) | VPS security hardening | High | Backlog |
+| [EVE-22](https://linear.app/evee/issue/EVE-22) | Set up Coolify notifications | Low | Backlog |
 
 ### Other
 
 | Issue | Title | Priority | Status | Epic |
 |-------|-------|----------|--------|------|
+| [EVE-23](https://linear.app/evee/issue/EVE-23) | Re-setup SOPS + age secrets encryption | Low | Backlog | -- |
+| [EVE-15](https://linear.app/evee/issue/EVE-15) | Define and implement backup strategy | Medium | Backlog | -- |
+| [EVE-14](https://linear.app/evee/issue/EVE-14) | Auto-download videos from watched playlists | Medium | Backlog | -- |
 | [EVE-5](https://linear.app/evee/issue/EVE-5) | Rewrite chat as Temporal workflow | High | Backlog | Epic 1 |
-| [EVE-8](https://linear.app/evee/issue/EVE-8) | Remove claude-max-api-proxy references | Medium | Backlog | — |
 
 ## Completed
 
 | Issue | Title | Epic |
 |-------|-------|------|
-| EVE-6 | Set up OpenRouter as LLM provider | — |
-| EVE-7 | Add git pre-commit hook for formatting and tests | — |
+| EVE-9 | Replace tRPC with Hono RPC + protectedRouter | Epic 4 |
+| EVE-10 | Channels, threads and messages -- data model + sidebar | Epic 4 |
+| EVE-11 | Core chat -- streaming AI response | Epic 4 |
+| EVE-12 | Tool calling -- web search and URL fetch | Epic 4 |
+| EVE-13 | Thread continuity | Epic 4 |
+| EVE-16 | Provision Hetzner CPX41 server | Epic 5 |
+| EVE-18 | Install and configure Coolify on VPS | Epic 5 |
+| EVE-19 | Write Dockerfiles for evee API and web | Epic 5 |
+| EVE-8 | Remove claude-max-api-proxy references | -- |
+| EVE-6 | Set up OpenRouter as LLM provider | -- |
+| EVE-7 | Add git pre-commit hook | -- |

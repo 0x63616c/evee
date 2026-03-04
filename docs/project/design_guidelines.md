@@ -4,10 +4,10 @@
 
 ## Design Principles
 
-- **Single-user tool** — optimised for Cal's workflow, not general audiences
-- **Chat-first** — conversation is the primary interface, channels/threads are navigation
-- **Dark mode default** — developer tool, dark is primary
-- **Dense but readable** — no excessive whitespace; maximize information density
+- **Single-user tool** -- optimised for Cal's workflow, not general audiences
+- **Chat-first** -- conversation is the primary interface, channels/threads are navigation
+- **Dark mode default** -- developer tool, dark is primary
+- **Dense but readable** -- no excessive whitespace; maximize information density
 
 ## Component Library
 
@@ -15,8 +15,10 @@
 |---------|---------|------|
 | shadcn/ui | latest | Component primitives (via radix-ui) |
 | radix-ui | ^1 | Headless accessibility primitives |
-| assistant-ui | latest | AI chat UI components (messages, typing indicators, tool status) |
-| lucide-react | ^0.5 | Icons |
+| @assistant-ui/react | ^0.12 | AI chat UI primitives (Thread, Composer, Message) |
+| @assistant-ui/react-ai-sdk | ^1.3 | AI SDK transport adapter |
+| @assistant-ui/react-markdown | ^0.12 | Markdown rendering in messages |
+| lucide-react | ^0.575 | Icons |
 | geist | ^1.7 | Font family (Geist Sans + Mono) |
 | sonner | ^2 | Toast notifications |
 | next-themes | ^0.4 | Dark/light theme management |
@@ -31,15 +33,16 @@
 ## Layout Structure
 
 ```
-AppShell
-├── Sidebar (channels list)
-│   └── ChannelList → ChannelItem
-├── ThreadPanel (threads for selected channel)
-│   └── ThreadList → ThreadItem
-└── ChatPane (active thread)
-    ├── MessageList (assistant-ui Thread component)
-    │   └── Message (user | assistant | tool)
-    └── MessageInput (assistant-ui Composer component)
+AppShell (_authenticated/dashboard.tsx)
++-- Sidebar (sidebar.tsx)
+|   +-- Channel icons (left strip, 56px)
+|   +-- Thread list (186px panel)
++-- ChatPane (chat.tsx)
+    +-- Thread header (thread name)
+    +-- MessageList (ThreadPrimitive.Viewport)
+    |   +-- UserMessage (right-aligned, primary bg)
+    |   +-- AssistantMessage (left-aligned, muted bg, markdown)
+    +-- Composer (ComposerPrimitive.Root)
 ```
 
 ## Chat Components (assistant-ui)
@@ -48,12 +51,13 @@ The chat UI is built with `assistant-ui` primitives:
 
 | Component | Usage |
 |-----------|-------|
-| `Thread` | Message list with auto-scroll |
-| `Composer` | Input box with submit |
-| `Message` | Individual message with role-based styling |
-| `ToolUI` | Tool call status (pending / completed) |
+| `ThreadPrimitive.Root` | Message list container with auto-scroll |
+| `ComposerPrimitive.Root` | Input box with submit button |
+| `MessagePrimitive.Content` | Individual message with role-based styling |
+| `MarkdownTextPrimitive` | Markdown rendering for assistant messages |
+| `SearchWebUI` / `FetchUrlUI` | Tool call status (via `makeAssistantToolUI`) |
 
-`useChat` from Vercel AI SDK connects to `POST /api/chat`.
+`useChatRuntime` from `@assistant-ui/react-ai-sdk` connects to `POST /api/chat` via `AssistantChatTransport`.
 
 ## Colour Palette
 
@@ -64,7 +68,7 @@ Driven by shadcn/ui CSS variables. Key semantic tokens:
 | `--background` | Page background |
 | `--foreground` | Primary text |
 | `--muted` | Secondary text, borders |
-| `--primary` | Accent (buttons, active states) |
+| `--primary` | Accent (buttons, active states, user messages) |
 | `--destructive` | Error states |
 | `--card` | Panel backgrounds |
 
@@ -81,11 +85,9 @@ Use `lucide-react` exclusively. Common icons:
 
 | Icon | Usage |
 |------|-------|
-| `MessageSquare` | Channels/threads |
-| `Send` | Submit message |
-| `Search` | Search |
-| `Settings` | Settings |
-| `Moon`/`Sun` | Theme toggle |
+| `Hash` | Channel icons |
+| `MessageSquare` | Thread items |
+| `LogOut` | Sign out button |
 
 ## Maintenance
 
