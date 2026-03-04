@@ -4,14 +4,20 @@ WORKDIR /app
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 
-COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+# Copy API source for type imports (apps/web imports types from apps/api)
+COPY apps/api/src ./apps/api/src
+COPY apps/api/package.json ./apps/api/package.json
 
-COPY . .
-RUN bun run build
+# Install web dependencies
+COPY apps/web/package.json apps/web/bun.lock ./apps/web/
+RUN cd apps/web && bun install --frozen-lockfile
+
+# Copy web source and build
+COPY apps/web/ ./apps/web/
+RUN cd apps/web && bun run build
 
 FROM nginx:alpine
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/apps/web/dist /usr/share/nginx/html
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
