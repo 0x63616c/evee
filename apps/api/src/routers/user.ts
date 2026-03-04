@@ -1,7 +1,6 @@
-import { protectedProcedure, router } from '../trpc.js';
+import { protectedRouter } from '../lib/protected-router.js';
 
-export const userRouter = router({
-  me: protectedProcedure.query(({ ctx }) => {
-    return ctx.user;
-  }),
+export const userRouter = protectedRouter().get('/me', (c) => {
+  const user = c.get('user');
+  return c.json({ user });
 });

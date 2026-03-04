@@ -1,10 +1,7 @@
-import { router } from '../trpc.js';
+import { Hono } from 'hono';
 import { authRouter } from './auth.js';
 import { userRouter } from './user.js';
 
-export const appRouter = router({
-  auth: authRouter,
-  user: userRouter,
-});
-
-export type AppRouter = typeof appRouter;
+export const apiRouter = new Hono()
+  .route('/auth', authRouter)
+  .route('/user', userRouter);

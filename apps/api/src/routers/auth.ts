@@ -1,12 +1,11 @@
-import { TRPCError } from '@trpc/server';
 import { eq } from 'drizzle-orm';
+import { Hono } from 'hono';
 import { SignJWT } from 'jose';
 import { typeid } from 'typeid-js';
 import { z } from 'zod';
 import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
 import { env } from '../env.js';
-import { publicProcedure, router } from '../trpc.js';
 
 const jwtSecret = new TextEncoder().encode(env.JWT_SECRET);
 
@@ -15,8 +14,11 @@ const authInput = z.object({
   password: z.string().min(8),
 });
 
-export const authRouter = router({
-  register: publicProcedure.input(authInput).mutation(async ({ input }) => {
+export const authRouter = new Hono()
+  .post('/signup', async (c) => {
+    const body = await c.req.json();
+    const input = authInput.parse(body);
+
     const existing = await db
       .select({ id: users.id })
       .from(users)
@@ -24,10 +26,7 @@ export const authRouter = router({
       .limit(1);
 
     if (existing.length > 0) {
-      throw new TRPCError({
-        code: 'CONFLICT',
-        message: 'Email already registered.',
-      });
+      return c.json({ error: 'Email already registered.' }, 409);
     }
 
     const id = typeid('user').toString();
@@ -44,10 +43,12 @@ export const authRouter = router({
       .setExpirationTime('7d')
       .sign(jwtSecret);
 
-    return { token };
-  }),
+    return c.json({ token });
+  })
+  .post('/login', async (c) => {
+    const body = await c.req.json();
+    const input = authInput.parse(body);
 
-  login: publicProcedure.input(authInput).mutation(async ({ input }) => {
     const [user] = await db
       .select()
       .from(users)
@@ -55,18 +56,12 @@ export const authRouter = router({
       .limit(1);
 
     if (!user) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'Invalid email or password.',
-      });
+      return c.json({ error: 'Invalid email or password.' }, 401);
     }
 
     const valid = await Bun.password.verify(input.password, user.passwordHash);
     if (!valid) {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: 'Invalid email or password.',
-      });
+      return c.json({ error: 'Invalid email or password.' }, 401);
     }
 
     const token = await new SignJWT({ sub: user.id })
@@ -74,6 +69,5 @@ export const authRouter = router({
       .setExpirationTime('7d')
       .sign(jwtSecret);
 
-    return { token };
-  }),
-});
+    return c.json({ token });
+  });
