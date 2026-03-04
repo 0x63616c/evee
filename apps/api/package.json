@@ -24,6 +24,7 @@
     "hono": "^4.12.3",
     "jose": "^6",
     "postgres": "^3",
+    "prom-client": "^15.1.3",
     "typeid-js": "^1",
     "zod": "^3"
   },
