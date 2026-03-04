@@ -174,6 +174,7 @@ bun run lint:fix                    # Run Biome lint and auto-fix
 - Commit message format is defined in `.claude/rules/commit-messages.md` — follow that format.
 - Small, focused commits — one logical change per commit. Always push after every commit.
 - **Lefthook** runs Biome on staged files pre-commit (auto-fixes and re-stages).
+- **Row-Level Security**: Tables with per-user data use `userTable()` (auto-adds `userId` column, RLS policy, `.enableRLS()`). Public tables use `publicTable()`. Never use `pgTable()` directly in schema — Lefthook enforces this. All DB queries on user-scoped tables must be wrapped in `withUserScope(userId, (db) => ...)`.
 
 ## System Prompt
 
