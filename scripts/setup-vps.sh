@@ -8,6 +8,7 @@
 #   3. fail2ban — ban IPs that brute-force SSH
 #   4. SSH hardening — disable password auth, key-only
 #   5. Install Docker CE (official)
+#   6. Create 'deploy' user with Docker access and limited sudo
 
 set -euo pipefail
 
@@ -42,7 +43,27 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.
 apt-get update -y
 apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin
 
+echo "==> Creating deploy user"
+if id "deploy" &>/dev/null; then
+  echo "    User 'deploy' already exists, skipping creation"
+else
+  useradd --create-home --shell /bin/bash deploy
+fi
+usermod -aG docker deploy
+
+# Allow deploy user to restart services (needed for kamal-proxy)
+echo "deploy ALL=(ALL) NOPASSWD: /usr/bin/systemctl" > /etc/sudoers.d/deploy
+chmod 0440 /etc/sudoers.d/deploy
+
+# Copy root's authorized SSH keys to deploy user
+mkdir -p /home/deploy/.ssh
+cp /root/.ssh/authorized_keys /home/deploy/.ssh/authorized_keys
+chown -R deploy:deploy /home/deploy/.ssh
+chmod 700 /home/deploy/.ssh
+chmod 600 /home/deploy/.ssh/authorized_keys
+
 echo ""
 echo "==> Setup complete!"
 echo ""
-echo "Docker is installed. Kamal will handle the rest (kamal setup installs kamal-proxy)."
+echo "Docker is installed and 'deploy' user is ready."
+echo "Kamal will handle the rest (kamal setup installs kamal-proxy)."

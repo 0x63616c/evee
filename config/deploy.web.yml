@@ -28,4 +28,4 @@ builder:
     VITE_API_URL: https://api.worldwidewebb.co
 
 ssh:
-  user: root
+  user: deploy

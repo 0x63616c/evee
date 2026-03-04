@@ -50,6 +50,6 @@ accessories:
       - data:/var/lib/postgresql/data
 
 ssh:
-  user: root
+  user: deploy
 
 hooks_path: .kamal/hooks
