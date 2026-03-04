@@ -1,68 +1,105 @@
-# CLAUDE.md
+# The Workflow Engine — Project Conventions
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Tech Stack (apps/web)
 
-## Project
+- **Bundler / Dev server**: Vite
+- **UI**: React 19, TypeScript
+- **Routing**: TanStack Router (file-based, Vite plugin)
+- **Data fetching / server state**: TanStack Query
+- **Client state**: Zustand
+- **Styling**: Tailwind CSS v4, shadcn/ui (style: new-york, base: neutral)
+- **Icons**: `lucide-react`
+- **Fonts**: Geist (`geist` package)
+- **Testing**: Vitest
+- **Linting / formatting**: Biome
 
-Evee is a personal AI assistant Discord bot. She listens to messages in a private Discord server, creates threads for each conversation, and replies using an LLM via OpenRouter.
+## Tech Stack (apps/api)
 
-## Commands
+- **Runtime**: Bun
+- **Framework**: tRPC v11
+- **Database**: PostgreSQL 16 via Drizzle ORM (schema: `src/db/schema.ts`)
+- **ID system**: TypeID — prefixed, time-sortable IDs (e.g. `user_xxx`). Stored as full string in varchar columns.
+- **Auth**: JWT via `jose`, password hashing via `Bun.password` (argon2)
+- **Validation**: Zod
+- **Env config**: Validated via Zod in `src/env.ts`. Never read `.env` directly — use `env.ts` exports.
+
+## Ports
+
+| Service    | Port |
+| ---------- | ---- |
+| web (Vite) | 4200 |
+| api (tRPC) | 4201 |
+| PostgreSQL | 4210 |
+
+## Directory Structure
+
+```
+apps/        # Deployable applications (e.g. apps/web)
+sdks/        # Client SDKs (empty — not yet used)
+libs/        # Shared internal libraries (empty — not yet used)
+infra/       # Infrastructure / deployment config (empty — not yet used)
+tools/       # Internal tooling and scripts (empty — not yet used)
+docs/        # Project documentation
+```
+
+## Local Development (Tilt)
+
+The project uses [Tilt](https://tilt.dev/) to orchestrate local services.
 
 ```bash
-# Run the bot
-uv run python evee.py
+tilt up                  # Start Postgres, run migrations, start API (4201) + web (4200)
+tilt down                # Stop all services
+tilt trigger db-reset    # Wipe DB and re-migrate
 ```
 
-## Logs
+Or manually:
 
-- Bot logs: `~/.local/log/evee.log`
-
-## Architecture
-
-- `evee.py` — main bot file. Discord event handling, LLM chat loop with tool calling, thread management.
-- `tools/` — tool registry and individual tools
-  - `__init__.py` — decorator-based registry, auto-discovers tool modules
-  - `search_web.py` — DuckDuckGo web search
-  - `fetch_url.py` — URL fetching with trafilatura content extraction + SSRF protection
-- `prompts/SYSTEM.md` — evee's personality/instructions (editable without restart)
-
-## Key Design Decisions
-
-- Uses OpenRouter API (OpenAI-compatible) with DeepSeek V3 as default model
-- System prompt is read from disk on every LLM call so edits take effect without restarting
-- Current date/time injected into system prompt automatically
-- Tool calling via async loop — Claude/DeepSeek decides when to use tools
-- Status messages sent to Discord during tool execution (e.g. "searching: ...")
-- No debounce/queueing on messages — rapid-fire messages may cause multiple responses (intentional MVP trade-off)
-- Thread history capped at 100 messages per request
-- The sync `openai` client call is wrapped in `asyncio.to_thread()` to avoid blocking the Discord event loop
-- Tool names use verb_noun snake_case convention (e.g. `search_web`, `fetch_url`)
-
-## Config
-
-- `.env` — secrets (DISCORD_BOT_TOKEN, OPENROUTER_API_KEY). See `.env.example` for required vars.
-- `prompts/SYSTEM.md` — evee's personality/instructions (editable without restart)
-
-## Adding a New Tool
-
-Create `tools/<verb>_<noun>.py`:
-
-```python
-from tools import register
-
-@register("verb_noun", schema={...}, status="doing thing: {param}")
-def verb_noun(param: str) -> str:
-    return result
+```bash
+docker compose up -d                      # Start Postgres on port 4210
+cd apps/api && bun run db:migrate         # Apply pending migrations
+cd apps/api && bun run dev                # API on port 4201
+cd apps/web && bun run dev                # Web on port 4200
 ```
 
-No other changes needed — the registry auto-discovers it.
+## Environment Variables (apps/api)
 
-## Testing
+Copy `.env.example` to `.env` inside `apps/api/`:
 
-Use the Discord MCP (SaseQ/discord-mcp) to interact with and test Evee directly. Guild ID: `1478129336316985529`. Always use the **testing** channel (ID: `1478564842733436955`) for sending test messages — it's dedicated for bot testing. Use `mcp__discord__send_message` to send test messages and `mcp__discord__read_messages` to check Evee's replies.
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection URL |
+| `JWT_SECRET` | Secret for signing JWT tokens |
+| `PORT` | API port (default: `4201`) |
 
-## Future Plans
+## Common Commands (apps/web)
 
-- SQLite logging of all messages and tool calls
-- Thread auto-rename after 3 messages (LLM-generated summary)
-- Multi-model routing (cheap model for simple tasks, smart model for complex ones)
+Run from `apps/web/`:
+
+```bash
+bun run dev        # Start dev server (port 4200)
+bun run build      # Type-check and build for production
+bun run test       # Run Vitest test suite
+bun run lint:fix   # Run Biome lint and auto-fix
+```
+
+## Common Commands (apps/api)
+
+Run from `apps/api/`:
+
+```bash
+bun run dev         # Start API server (port 4201, hot-reload via --watch)
+bun run db:generate # Generate Drizzle migration files
+bun run db:migrate  # Apply pending migrations
+bun run db:push     # Push schema directly (dev only, no migration file)
+bun run db:studio   # Open Drizzle Studio (DB browser)
+bun run test        # Run Vitest test suite
+bun run lint:fix    # Run Biome lint and auto-fix
+```
+
+## Key Conventions
+
+- `biome.json` lives at the **repo root** and applies to all packages.
+- `routeTree.gen.ts` is **committed** — it is auto-generated by the TanStack Router Vite plugin on every dev/build run. Do not delete or hand-edit it.
+- All other app-level config (tsconfig, vite.config.ts, vitest.config.ts, components.json) lives inside the app directory.
+- Use `bun` / `bunx` — never `npm` / `npx`.
+- Use `agent-browser` directly (not via bun/npx) for browser testing — it runs as a local CLI.

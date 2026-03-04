@@ -1,0 +1,32 @@
+.sel-swatch-0::selection {
+  background-color: oklch(0.72 0.38 345);
+  color: oklch(0.15 0 0);
+} /* Radioactive Pink */
+.sel-swatch-1::selection {
+  background-color: oklch(0.65 0.42 330);
+  color: oklch(0.15 0 0);
+} /* Hot Magenta */
+.sel-swatch-2::selection {
+  background-color: oklch(0.72 0.28 240);
+  color: oklch(0.15 0 0);
+} /* Toxic Blue */
+.sel-swatch-3::selection {
+  background-color: oklch(0.85 0.22 200);
+  color: oklch(0.15 0 0);
+} /* Electric Cyan */
+.sel-swatch-4::selection {
+  background-color: oklch(0.85 0.28 140);
+  color: oklch(0.15 0 0);
+} /* Acid Green */
+.sel-swatch-5::selection {
+  background-color: oklch(0.95 0.22 105);
+  color: oklch(0.15 0 0);
+} /* Neon Yellow */
+.sel-swatch-6::selection {
+  background-color: oklch(0.78 0.22 55);
+  color: oklch(0.15 0 0);
+} /* Laser Orange */
+.sel-swatch-7::selection {
+  background-color: oklch(0.65 0.32 300);
+  color: oklch(0.15 0 0);
+} /* Toxic Purple */

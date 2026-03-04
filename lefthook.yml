@@ -1,0 +1,11 @@
+# Only print failures — suppress banner, summary, and skipped-file noise
+output:
+  - failure
+
+pre-commit:
+  parallel: true
+  commands:
+    biome:
+      glob: "**/*.{ts,tsx,js,jsx,json,jsonc}"
+      run: ./apps/api/node_modules/.bin/biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+      stage_fixed: true
