@@ -57,6 +57,10 @@ def verb_noun(param: str) -> str:
 
 No other changes needed — the registry auto-discovers it.
 
+## Testing
+
+Use the Discord MCP (SaseQ/discord-mcp) to interact with and test Evee directly. Guild ID: `1478129336316985529`. Use `mcp__discord__find_channel` to locate channels, `mcp__discord__send_message` to send test messages, and `mcp__discord__read_messages` to check Evee's replies.
+
 ## Future Plans
 
 - SQLite logging of all messages and tool calls
