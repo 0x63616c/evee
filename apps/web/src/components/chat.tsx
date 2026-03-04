@@ -10,6 +10,7 @@ import {
 } from '@assistant-ui/react-ai-sdk';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRef } from 'react';
+import { FetchUrlUI, SearchWebUI } from '@/components/tool-ui';
 import { useAuthStore } from '@/stores/auth';
 
 interface ChatProps {
@@ -54,6 +55,8 @@ export function Chat({ channelId, threadId }: ChatProps) {
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
+      <SearchWebUI />
+      <FetchUrlUI />
       <div className="flex h-full flex-col">
         <ThreadPrimitive.Root className="flex flex-1 flex-col">
           <ThreadPrimitive.Viewport className="flex flex-1 flex-col items-center overflow-y-auto scroll-smooth px-4 pt-8">
