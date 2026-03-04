@@ -6,16 +6,28 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  lint:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+      - uses: actions/cache@v4
+        with:
+          path: |
+            apps/api/node_modules
+            apps/web/node_modules
+          key: bun-${{ hashFiles('apps/api/bun.lockb', 'apps/web/bun.lockb') }}
+          restore-keys: bun-
       - run: bun install --cwd apps/api --frozen-lockfile
       - run: bun install --cwd apps/web --frozen-lockfile
       - run: cd apps/api && bun run lint
       - run: cd apps/web && bun run lint
+      - run: cd apps/web && bun run test
 
   test-api:
     runs-on: ubuntu-latest
@@ -39,24 +51,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+      - uses: actions/cache@v4
+        with:
+          path: apps/api/node_modules
+          key: bun-api-${{ hashFiles('apps/api/bun.lockb') }}
+          restore-keys: bun-api-
       - run: bun install --cwd apps/api --frozen-lockfile
       - run: cd apps/api && bunx drizzle-kit migrate
       - run: cd apps/api && bun run test
 
-  test-web:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - run: bun install --cwd apps/web --frozen-lockfile
-      - run: cd apps/web && bun run test
-
   deploy-api:
-    needs: [lint, test-api]
+    needs: [check, test-api]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: ghcr.io/0x63616c/evee-api:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3'
@@ -74,14 +97,28 @@ jobs:
           OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           EOF
-      - run: kamal deploy -c config/deploy.api.yml
+      - run: kamal deploy -P -c config/deploy.api.yml
 
   deploy-web:
-    needs: [lint, test-web]
+    needs: [check]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          tags: ghcr.io/0x63616c/evee-web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: '3.3'
@@ -95,4 +132,4 @@ jobs:
           cat > .kamal/secrets <<EOF
           KAMAL_REGISTRY_PASSWORD=${{ secrets.GHCR_TOKEN }}
           EOF
-      - run: kamal deploy -c config/deploy.web.yml
+      - run: kamal deploy -P -c config/deploy.web.yml

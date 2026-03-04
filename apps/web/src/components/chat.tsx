@@ -150,7 +150,7 @@ function ChatRuntime({
 
           <div className="sticky bottom-0 w-full bg-background px-4 pb-4">
             <div className="mx-auto max-w-2xl">
-              <ComposerPrimitive.Root className="flex items-end gap-2 rounded-lg border border-border bg-card p-3">
+              <ComposerPrimitive.Root className="flex items-center gap-2 rounded-lg border border-border bg-card p-3">
                 <ComposerPrimitive.Input
                   placeholder="Message evee..."
                   className="flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"

@@ -97,11 +97,29 @@ Edit `prompts/SYSTEM.md` -- takes effect on next LLM call, no restart needed.
 | API (dev) | stdout (Tilt terminal) |
 | Web (dev) | stdout (Tilt terminal) |
 
-## CI
+## CI/CD
 
-GitHub Actions runs on push/PR to `main`:
-- `biome check` (lint + format) for both apps
-- `vitest run` (unit tests) for api and web separately
+GitHub Actions (`.github/workflows/ci.yml`) runs on push/PR to `main`.
+
+**Pipeline structure:**
+
+| Job | Depends on | What it does |
+|-----|-----------|--------------|
+| `check` | -- | Lint (Biome) + web tests in one runner |
+| `test-api` | -- | API tests against Postgres service container |
+| `deploy-api` | check, test-api | Build Docker image, push to GHCR, `kamal deploy -P` |
+| `deploy-web` | check | Build Docker image, push to GHCR, `kamal deploy -P` |
+
+Deploy jobs only run on pushes to `main` (not PRs).
+
+**Caching:**
+
+- `actions/cache` on `node_modules` keyed by lockfile hash -- skips `bun install` on cache hit
+- `docker/build-push-action` with GHA cache backend (`cache-from: type=gha`) -- subsequent builds with unchanged deps/layers take ~5-10s
+
+**Concurrency:** Pushes to the same branch cancel in-progress runs (only the latest matters).
+
+**Secrets (GitHub repo settings):** `VPS_SSH_KEY`, `GHCR_TOKEN`, `DATABASE_URL`, `JWT_SECRET`, `OPENROUTER_API_KEY`, `POSTGRES_PASSWORD`
 
 ## Ports
 
