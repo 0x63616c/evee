@@ -1,6 +1,5 @@
 import asyncio
 import atexit
-import json
 import logging
 import os
 import subprocess
@@ -9,12 +8,13 @@ import urllib.error
 import urllib.request
 from datetime import datetime
 from pathlib import Path
+from typing import Awaitable, Callable
 
 import discord
 from dotenv import load_dotenv
 from openai import OpenAI
 
-import tools
+from tools import execute_tool, get_openai_tools, get_status_message
 
 load_dotenv()
 
@@ -87,21 +87,76 @@ atexit.register(stop_proxy)
 llm = OpenAI(base_url=f"{PROXY_URL}/v1", api_key="not-needed")
 
 
+_MAX_TOOL_ITERATIONS = 10
+
+OnStatus = Callable[[str], Awaitable[None]]
+
+
 def load_system_prompt() -> str:
-    return Path("prompts/SYSTEM.md").read_text().strip()
+    base = Path("prompts/SYSTEM.md").read_text().strip()
+    now = datetime.now().strftime("%A, %B %-d, %Y, %-I:%M %p %Z").strip()
+    return f"{base}\n\nCurrent date and time: {now}"
 
 
-def chat(messages: list[dict]) -> str:
+async def chat(messages: list[dict], on_status: OnStatus | None = None) -> str:
     system_prompt = load_system_prompt()
-    try:
-        resp = llm.chat.completions.create(
-            model="claude-sonnet-4",
-            messages=[{"role": "system", "content": system_prompt}] + messages,
+    tool_schemas = get_openai_tools()
+    full_messages = [{"role": "system", "content": system_prompt}] + messages
+
+    for _ in range(_MAX_TOOL_ITERATIONS):
+        try:
+            resp = await asyncio.to_thread(
+                llm.chat.completions.create,
+                model="claude-sonnet-4",
+                messages=full_messages,
+                tools=tool_schemas if tool_schemas else None,
+            )
+        except Exception:
+            log.exception("llm request failed")
+            return "sorry, something went wrong with my brain. try again?"
+
+        msg = resp.choices[0].message
+
+        if not msg.tool_calls:
+            return msg.content or "(empty response)"
+
+        # Append the assistant message with tool calls
+        full_messages.append(
+            {
+                "role": "assistant",
+                "content": msg.content,
+                "tool_calls": [
+                    {
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments,
+                        },
+                    }
+                    for tc in msg.tool_calls
+                ],
+            }
         )
-        return resp.choices[0].message.content or "(empty response)"
-    except Exception:
-        log.exception("llm request failed")
-        return "sorry, something went wrong with my brain. try again?"
+
+        # Execute each tool call
+        for tc in msg.tool_calls:
+            status = get_status_message(tc.function.name, tc.function.arguments)
+            if status and on_status:
+                await on_status(status)
+
+            result = await asyncio.to_thread(
+                execute_tool, tc.function.name, tc.function.arguments
+            )
+            full_messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": tc.id,
+                    "content": result,
+                }
+            )
+
+    return "sorry, I got stuck in a loop trying to use my tools. try again?"
 
 
 # --- Discord helpers ---
@@ -173,8 +228,11 @@ async def handle_channel_message(message: discord.Message):
 
     messages = [{"role": "user", "content": message.content}]
 
+    async def on_status(text: str):
+        await thread.send(text)
+
     async with thread.typing():
-        reply = await asyncio.to_thread(chat, messages)
+        reply = await chat(messages, on_status=on_status)
 
     for chunk in split_message(reply):
         await thread.send(chunk)
@@ -191,8 +249,11 @@ async def handle_thread_message(message: discord.Message):
             continue
         history.append({"role": role, "content": content})
 
+    async def on_status(text: str):
+        await thread.send(text)
+
     async with thread.typing():
-        reply = await asyncio.to_thread(chat, history)
+        reply = await chat(history, on_status=on_status)
 
     for chunk in split_message(reply):
         await thread.send(chunk)
