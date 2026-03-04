@@ -98,6 +98,8 @@ jobs:
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
           POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+          POSTGRES_EXPORTER_DSN=${{ secrets.POSTGRES_EXPORTER_DSN }}
           EOF
       - run: kamal deploy -P -c config/deploy.api.yml
 
