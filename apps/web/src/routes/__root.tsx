@@ -12,14 +12,15 @@ function RootLayout() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="fixed top-0 right-0 z-50 p-3">
+      <header className="fixed top-0 right-0 z-50 h-12 flex items-center pr-3">
         <Button
           variant="ghost"
-          size="icon"
+          size="sm"
+          className="h-7 w-7 p-0"
           onClick={() => setTheme(isDark ? 'light' : 'dark')}
           aria-label="Toggle theme"
         >
-          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          {isDark ? <Sun size={14} /> : <Moon size={14} />}
         </Button>
       </header>
       <Outlet />
