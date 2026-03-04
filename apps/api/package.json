@@ -17,6 +17,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@openrouter/ai-sdk-provider": "^2.2.3",
+    "ai": "^6.0.111",
     "drizzle-orm": "^0.44",
     "hono": "^4.12.3",
     "jose": "^6",
