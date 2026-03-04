@@ -101,6 +101,7 @@ jobs:
           GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}
           POSTGRES_EXPORTER_DSN=${{ secrets.POSTGRES_EXPORTER_DSN }}
           EOF
+      - run: kamal env push -c config/deploy.api.yml
       - run: kamal deploy -P -c config/deploy.api.yml
 
   deploy-web:
