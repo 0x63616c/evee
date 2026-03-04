@@ -3,6 +3,7 @@ import atexit
 import logging
 import os
 import subprocess
+import time
 import urllib.request
 import urllib.error
 from datetime import datetime
@@ -23,6 +24,7 @@ PROXY_LOG_DIR = Path.home() / ".local" / "log"
 PROXY_LOG_FILE = PROXY_LOG_DIR / "claude-proxy.log"
 
 proxy_process: subprocess.Popen | None = None
+proxy_log_handle = None
 
 
 def proxy_is_running() -> bool:
@@ -35,23 +37,21 @@ def proxy_is_running() -> bool:
 
 
 def start_proxy() -> subprocess.Popen | None:
-    global proxy_process
+    global proxy_process, proxy_log_handle
 
     if proxy_is_running():
         log.info("proxy already running")
         return None
 
     PROXY_LOG_DIR.mkdir(parents=True, exist_ok=True)
-    log_file = open(PROXY_LOG_FILE, "a")
+    proxy_log_handle = open(PROXY_LOG_FILE, "a")
 
     log.info("starting claude-max-api-proxy...")
     proxy_process = subprocess.Popen(
         ["node", PROXY_SCRIPT],
-        stdout=log_file,
-        stderr=log_file,
+        stdout=proxy_log_handle,
+        stderr=proxy_log_handle,
     )
-    # give it a moment to start
-    import time
     time.sleep(2)
 
     if proxy_is_running():
@@ -63,7 +63,7 @@ def start_proxy() -> subprocess.Popen | None:
 
 
 def stop_proxy():
-    global proxy_process
+    global proxy_process, proxy_log_handle
     if proxy_process is not None:
         log.info("stopping proxy (pid %d)", proxy_process.pid)
         proxy_process.terminate()
@@ -72,6 +72,9 @@ def stop_proxy():
         except subprocess.TimeoutExpired:
             proxy_process.kill()
         proxy_process = None
+    if proxy_log_handle is not None:
+        proxy_log_handle.close()
+        proxy_log_handle = None
 
 
 atexit.register(stop_proxy)
@@ -87,11 +90,15 @@ def load_system_prompt() -> str:
 
 def chat(messages: list[dict]) -> str:
     system_prompt = load_system_prompt()
-    resp = llm.chat.completions.create(
-        model="claude-sonnet-4",
-        messages=[{"role": "system", "content": system_prompt}] + messages,
-    )
-    return resp.choices[0].message.content
+    try:
+        resp = llm.chat.completions.create(
+            model="claude-sonnet-4",
+            messages=[{"role": "system", "content": system_prompt}] + messages,
+        )
+        return resp.choices[0].message.content or "(empty response)"
+    except Exception:
+        log.exception("llm request failed")
+        return "sorry, something went wrong with my brain. try again?"
 
 
 # --- Discord helpers ---
@@ -175,7 +182,10 @@ async def handle_thread_message(message: discord.Message):
     history = []
     async for msg in thread.history(limit=100, oldest_first=True):
         role = "assistant" if msg.author == client.user else "user"
-        history.append({"role": role, "content": msg.content})
+        content = msg.content or ""
+        if not content:
+            continue
+        history.append({"role": role, "content": content})
 
     async with thread.typing():
         reply = await asyncio.to_thread(chat, history)
