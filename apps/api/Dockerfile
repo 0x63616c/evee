@@ -14,6 +14,7 @@ COPY prompts/ /prompts/
 
 RUN chown -R app:app /app /prompts
 
+LABEL service="evee-api"
 ENV NODE_ENV=production
 EXPOSE 4201
 
