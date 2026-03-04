@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
 import { env } from '../env.js';
+import { rateLimiter } from '../middleware/rate-limit.js';
 
 const jwtSecret = new TextEncoder().encode(env.JWT_SECRET);
 
@@ -14,8 +15,20 @@ const authInput = z.object({
   password: z.string().min(8),
 });
 
+const loginLimiter = rateLimiter({
+  windowMs: 60_000,
+  max: 5,
+  message: 'Too many login attempts, please try again later.',
+});
+
+const signupLimiter = rateLimiter({
+  windowMs: 60_000,
+  max: 3,
+  message: 'Too many signup attempts, please try again later.',
+});
+
 export const authRouter = new Hono()
-  .post('/signup', async (c) => {
+  .post('/signup', signupLimiter, async (c) => {
     if (!env.SIGNUP_ENABLED) {
       return c.json({ error: 'Signup is currently disabled.' }, 403);
     }
@@ -49,7 +62,7 @@ export const authRouter = new Hono()
 
     return c.json({ token });
   })
-  .post('/login', async (c) => {
+  .post('/login', loginLimiter, async (c) => {
     const body = await c.req.json();
     const input = authInput.parse(body);
 
