@@ -14,7 +14,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { UIMessage } from 'ai';
 import { useRef } from 'react';
 import { FetchUrlUI, SearchWebUI } from '@/components/tool-ui';
-import { api } from '@/lib/api';
+import { api, API_URL } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 
 interface ChatProps {
@@ -85,7 +85,7 @@ function ChatRuntime({ channelId, threadId, threadName, initialMessages, onFinis
   const runtime = useChatRuntime({
     messages: initialMessages,
     transport: new AssistantChatTransport({
-      api: 'http://localhost:4201/api/chat',
+      api: `${API_URL}/api/chat`,
       headers: (): Record<string, string> => {
         const token = useAuthStore.getState().token;
         if (token) return { Authorization: `Bearer ${token}` };

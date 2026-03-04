@@ -7,6 +7,8 @@ function getHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-export const api = hc<AppType>('http://localhost:4201', {
+export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:4201';
+
+export const api = hc<AppType>(API_URL, {
   headers: getHeaders,
 });
