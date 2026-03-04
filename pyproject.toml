@@ -10,6 +10,7 @@ dependencies = [
     "openai>=2.24.0",
     "python-dotenv>=1.2.2",
     "trafilatura>=2.0.0",
+    "truststore>=0.10.4",
 ]
 
 [dependency-groups]
