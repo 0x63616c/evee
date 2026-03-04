@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { MessageSquare } from 'lucide-react';
 import { Chat } from '@/components/chat';
@@ -8,6 +9,7 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
 
 function DashboardPage() {
   const { channelId, threadId } = Route.useSearch();
+  const queryClient = useQueryClient();
 
   if (!channelId) {
     return (
@@ -20,5 +22,13 @@ function DashboardPage() {
     );
   }
 
-  return <Chat channelId={channelId} threadId={threadId} />;
+  // Look up thread name from the cached threads query
+  const threadsData = queryClient.getQueryData<{
+    threads: Array<{ id: string; name: string }>;
+  }>(['threads', channelId]);
+  const threadName = threadsData?.threads.find((t) => t.id === threadId)?.name;
+
+  return (
+    <Chat channelId={channelId} threadId={threadId} threadName={threadName} />
+  );
 }

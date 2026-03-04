@@ -8,24 +8,93 @@ import {
   AssistantChatTransport,
   useChatRuntime,
 } from '@assistant-ui/react-ai-sdk';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { UIMessage } from 'ai';
 import { useRef } from 'react';
 import { FetchUrlUI, SearchWebUI } from '@/components/tool-ui';
+import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth';
 
 interface ChatProps {
   channelId: string;
   threadId?: string;
+  threadName?: string;
 }
 
-export function Chat({ channelId, threadId }: ChatProps) {
+export function Chat({ channelId, threadId, threadName }: ChatProps) {
   const queryClient = useQueryClient();
   const channelIdRef = useRef(channelId);
   const threadIdRef = useRef(threadId);
   channelIdRef.current = channelId;
   threadIdRef.current = threadId;
 
+  const historyQuery = useQuery({
+    queryKey: ['messages', threadId],
+    enabled: !!threadId,
+    async queryFn() {
+      const res = await api.api.messages.$get({
+        query: { threadId: threadId as string },
+      });
+      if (!res.ok) throw new Error('Failed to fetch messages');
+      return res.json();
+    },
+  });
+
+  const initialMessages: UIMessage[] =
+    historyQuery.data?.messages
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .map((m) => ({
+        id: m.id,
+        role: m.role as 'user' | 'assistant',
+        parts: [{ type: 'text' as const, text: m.content }],
+        createdAt: new Date(m.createdAt),
+      })) ?? [];
+
+  // Wait for history to load before rendering chat for existing threads
+  if (threadId && historyQuery.isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        <p className="text-sm">Loading conversation...</p>
+      </div>
+    );
+  }
+
+  return (
+    <ChatRuntime
+      key={threadId ?? 'new'}
+      channelId={channelId}
+      threadId={threadId}
+      threadName={threadName}
+      initialMessages={initialMessages}
+      onFinish={() => {
+        queryClient.invalidateQueries({ queryKey: ['threads'] });
+      }}
+    />
+  );
+}
+
+interface ChatRuntimeProps {
+  channelId: string;
+  threadId?: string;
+  threadName?: string;
+  initialMessages: UIMessage[];
+  onFinish: () => void;
+}
+
+function ChatRuntime({
+  channelId,
+  threadId,
+  threadName,
+  initialMessages,
+  onFinish,
+}: ChatRuntimeProps) {
+  const channelIdRef = useRef(channelId);
+  const threadIdRef = useRef(threadId);
+  channelIdRef.current = channelId;
+  threadIdRef.current = threadId;
+
   const runtime = useChatRuntime({
+    messages: initialMessages,
     transport: new AssistantChatTransport({
       api: 'http://localhost:4201/api/chat',
       headers: (): Record<string, string> => {
@@ -48,9 +117,7 @@ export function Chat({ channelId, threadId }: ChatProps) {
         };
       },
     }),
-    onFinish: () => {
-      queryClient.invalidateQueries({ queryKey: ['threads'] });
-    },
+    onFinish,
   });
 
   return (
@@ -58,6 +125,11 @@ export function Chat({ channelId, threadId }: ChatProps) {
       <SearchWebUI />
       <FetchUrlUI />
       <div className="flex h-full flex-col">
+        {threadName && (
+          <div className="shrink-0 border-b border-border px-4 py-2">
+            <h2 className="text-sm font-medium truncate">{threadName}</h2>
+          </div>
+        )}
         <ThreadPrimitive.Root className="flex flex-1 flex-col">
           <ThreadPrimitive.Viewport className="flex flex-1 flex-col items-center overflow-y-auto scroll-smooth px-4 pt-8">
             <div className="w-full max-w-2xl">
