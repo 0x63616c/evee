@@ -1,75 +1,126 @@
 # Architecture
 
+<!-- SCOPE: System structure, component responsibilities, and data flow. No implementation details. -->
+
 ## Overview
 
-Evee is a single-process Discord bot that routes user messages through an LLM with tool-calling capabilities.
+Evee is a personal AI assistant web app. Single-user, monorepo with two apps: a Hono API server and a React web UI. The user chats via the web UI; the API handles auth, data persistence, and LLM streaming. Conversations are organised as Channels → Threads → Messages (Discord-like).
 
 ```
-Discord Server
+Browser (React + Vite)
+    |
+    +-- Auth (login/register) → POST /api/auth/*
+    +-- Chat UI (channels/threads) → Hono RPC hc client
+    +-- Streaming AI responses → POST /api/chat (SSE)
     |
     v
-discord.py Client (evee.py)
+Hono API (apps/api — port 4201)
     |
-    +-- on_message (channel) --> create thread --> chat()
-    +-- on_message (thread)  --> load history --> chat()
+    +-- authMiddleware (JWT via jose)
+    +-- protectedRouter() factory — all routes auto-protected
+    +-- /api/chat → Vercel AI SDK streamText → OpenRouter → DeepSeek V3
+    +-- tools: search_web, fetch_url
     |
     v
-chat() — async tool-calling loop
-    |
-    +-- OpenAI client --> OpenRouter API --> DeepSeek V3
-    +-- tool calls --> tools/ registry --> execute_tool()
-    |                                        |
-    |                                        +-- search_web (DuckDuckGo)
-    |                                        +-- fetch_url (httpx + trafilatura)
-    v
-response --> split_message() --> thread.send()
+PostgreSQL 16 (Docker — port 4210)
+    Drizzle ORM
+    Tables: users, channels, threads, messages
 ```
 
 ## Components
 
-### Discord Layer (`evee.py`)
+### apps/web (React + Vite — port 4200)
 
-- `on_message` — routes channel messages vs thread messages
-- `handle_channel_message` — creates a new thread, sends first message to LLM
-- `handle_thread_message` — loads thread history (up to 100 messages), sends to LLM
-- `split_message` — splits long responses at newlines/spaces to fit Discord's 2000-char limit
-- `format_thread_name` — generates timestamped thread names
+| Module | Path | Purpose |
+|--------|------|---------|
+| Routing | `src/routes/` | TanStack Router (file-based) |
+| Auth pages | `_authenticated/` route group | Login/signup, redirect if unauthenticated |
+| Chat UI | `_authenticated/` | Channel list, thread view, message stream |
+| API client | `src/lib/api.ts` | Hono `hc` typed RPC client |
+| State | `src/stores/` | Zustand stores (auth token, theme) |
+| Components | `src/components/` | shadcn/ui + assistant-ui chat components |
 
-### LLM Layer (`evee.py`)
+### apps/api (Hono — port 4201)
 
-- `chat()` — async function that runs the tool-calling loop (up to 10 iterations)
-- Wraps synchronous OpenAI client in `asyncio.to_thread()` to avoid blocking
-- Loads system prompt from `prompts/SYSTEM.md` on every call
-- Injects current date/time into system prompt
+| Module | Path | Purpose |
+|--------|------|---------|
+| Entry | `src/index.ts` | Hono app, CORS, logger, route mount |
+| Auth | `src/routers/auth.ts` | register, login (public) |
+| Channels | `src/routers/channels.ts` | list channels, get threads (protected) |
+| Threads | `src/routers/threads.ts` | create thread, list messages (protected) |
+| Chat | `src/routers/chat.ts` | POST /api/chat — AI SDK streamText (protected) |
+| Tools | `src/tools/` | search_web, fetch_url (SSRF-protected) |
+| Auth middleware | `src/middleware/auth.ts` | JWT verify via jose |
+| protectedRouter | `src/lib/router.ts` | `new Hono().use('*', authMiddleware)` factory |
+| DB | `src/db/` | Drizzle ORM client + schema |
+| Env | `src/env.ts` | Zod-validated environment variables |
 
-### Tool System (`tools/`)
+## Auth Pattern
 
-- `__init__.py` — decorator-based registry with auto-discovery via `pkgutil`
-- `@register(name, schema, status)` — registers a tool with its OpenAI schema and status template
-- `execute_tool(name, args_json)` — looks up and executes a tool by name
-- `get_status_message(name, args_json)` — formats status template for Discord display
+```
+protectedRouter() → new Hono().use('*', authMiddleware)
+    └── every route added inherits JWT protection
+    └── opting out requires explicit effort (use plain Hono())
+```
 
-### Individual Tools
+JWT tokens are HS256, 7-day expiry. `Bun.password.hash/verify` (argon2) for passwords.
 
-| Tool | File | Dependencies | Purpose |
-|------|------|--------------|---------|
-| `search_web` | `tools/search_web.py` | ddgs | DuckDuckGo web search, returns top 5 results |
-| `fetch_url` | `tools/fetch_url.py` | httpx, trafilatura | Fetches URL, extracts text content, SSRF-protected |
+## Data Model
 
-## Data Flow
+```
+channels (seeded, not user-created)
+    └── threads (one per conversation start)
+            └── messages (user | assistant | tool)
+```
 
-1. User sends message in Discord channel or thread
-2. Bot creates thread (if channel) or loads history (if thread)
-3. `chat()` sends conversation + system prompt to OpenRouter (DeepSeek V3)
-4. If LLM returns tool calls: execute tools, send status to Discord, append results, loop
-5. If LLM returns text: split and send to Discord thread
+| Entity | Key Fields |
+|--------|-----------|
+| channels | id, name, description, created_at |
+| threads | id, channel_id, user_id, name, created_at |
+| messages | id, thread_id, role (user/assistant/tool), content, created_at |
+
+## AI/LLM Flow
+
+```
+POST /api/chat
+    ├── Authenticate (JWT)
+    ├── Load thread history from DB (capped at 100 messages)
+    ├── Load system prompt from disk (live-editable)
+    ├── Inject current date/time
+    ├── streamText(model, messages, tools, maxSteps: 10)
+    │       ├── Tool call → execute → append result → loop
+    │       └── Final text → stream SSE to client
+    └── Persist messages to DB
+```
+
+Tools available to the LLM:
+
+| Tool | Purpose | Protection |
+|------|---------|-----------|
+| search_web | DuckDuckGo web search | Rate-limited |
+| fetch_url | Fetch and extract page content | SSRF block list |
+
+## Local Dev Orchestration (Tilt)
+
+```
+tilt up
+    ├── postgres (Docker, port 4210)
+    ├── db-migrate (drizzle-kit migrate, auto on schema change)
+    ├── api (bun run dev, port 4201, health: GET /healthz)
+    └── web (bun run dev, port 4200)
+```
 
 ## Key Constraints
 
 | Constraint | Value | Reason |
 |------------|-------|--------|
-| Thread history | 100 messages | Prevent token overflow |
-| Tool iterations | 10 max | Prevent infinite loops |
-| Discord message | 2000 chars | Discord API limit |
-| URL content | 6000 chars | Prevent token overflow from large pages |
+| Thread history | 100 messages | Token overflow prevention |
+| Tool iterations | 10 (maxSteps) | Prevent infinite loops |
 | System prompt | Loaded from disk each call | Live-editable without restart |
+| Channels | Pre-defined (seeded) | Single-user, curated topics |
+| Auth | Single user, JWT | Personal tool for Cal |
+
+## Maintenance
+
+**Update when:** Adding new routes, changing DB schema, modifying AI flow, adding tools.
+**Verify:** Component paths exist in codebase, port numbers match Tilt/docker-compose.

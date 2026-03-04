@@ -1,31 +1,35 @@
 # Requirements
 
-## Current (v0.1 — MVP)
+<!-- SCOPE: Functional requirements only. No implementation details, no NFRs. -->
 
-| ID | Requirement | Status |
-|----|-------------|--------|
-| R1 | Respond to messages in a private Discord server via LLM | Done |
-| R2 | Create a new thread for each channel message | Done |
-| R3 | Maintain conversation context within threads (up to 100 messages) | Done |
-| R4 | Support tool calling — LLM can invoke tools during conversation | Done |
-| R5 | Web search tool (DuckDuckGo) | Done |
-| R6 | URL fetching tool with content extraction | Done |
-| R7 | SSRF protection on URL fetching (block private IPs, non-HTTP schemes) | Done |
-| R8 | System prompt editable without restart | Done |
-| R9 | Status messages shown in Discord during tool execution | Done |
-| R10 | Long responses split at Discord's 2000-char limit | Done |
+## Current (v0.2 — TypeScript Rewrite)
+
+| ID | Requirement | Status | Epic |
+|----|-------------|--------|------|
+| R1 | User can send a message and receive a streaming AI response via web UI | In Progress | Epic 4 |
+| R2 | Conversations organised as Channels → Threads → Messages | In Progress | Epic 4 |
+| R3 | Channels are pre-defined (seeded); user cannot create/delete channels | In Progress | Epic 4 |
+| R4 | New message in a channel creates a new thread | In Progress | Epic 4 |
+| R5 | User can view and continue past threads | In Progress | Epic 4 |
+| R6 | LLM can invoke tools (web search, URL fetch) during conversation | In Progress | Epic 4 |
+| R7 | Tool call status shown in UI during execution | In Progress | Epic 4 |
+| R8 | SSRF protection on URL fetch tool (block private IPs, non-HTTP) | In Progress | Epic 4 |
+| R9 | System prompt loaded from disk on each LLM call (live-editable) | In Progress | Epic 4 |
+| R10 | Auth required to access the app (single user, JWT) | In Progress | Epic 4 |
+| R11 | Thread name auto-set from first user message | In Progress | Epic 4 |
 
 ## Planned
 
-| ID | Requirement | Priority | Notes |
-|----|-------------|----------|-------|
-| R11 | SQLite logging of all messages and tool calls | High | Observability, debugging, cost tracking |
-| R12 | Thread auto-rename after 3 messages | Medium | LLM-generated summary as thread name |
-| R13 | Multi-model routing | Low | Cheap model for simple tasks, smart model for complex |
+| ID | Requirement | Priority | Epic | Notes |
+|----|-------------|----------|------|-------|
+| R12 | All messages and tool calls logged to SQLite/Postgres | High | Epic 2 | Observability, debugging, cost tracking |
+| R13 | Temporal workflow for durable chat execution | High | Epic 1 | Automatic retries, replay, debugging |
+| R14 | Multi-model routing | Low | — | Cheap model for simple tasks, smart for complex |
 
 ## Non-Goals
 
-- Multi-server support (private server only)
-- User authentication/authorization (trusted environment)
-- Web dashboard or admin UI
-- Voice channel support
+- Multi-user support (single user — personal assistant for Cal only)
+- Mobile app
+- Voice input
+- Discord bot (retired — replaced by web UI)
+- Web dashboard or admin UI beyond the chat interface

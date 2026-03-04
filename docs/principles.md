@@ -1,50 +1,52 @@
 # Development Principles
 
-Conventions and principles for the evee codebase.
+Conventions and principles for the Evee codebase (TypeScript/Bun).
 
 ## Code Style
 
-- **Python 3.12+** — use modern syntax (type unions with `|`, `match`, etc.)
+- **TypeScript 5.9+** — strict mode, no `any`, use Zod for runtime validation
 - **Imports at top** — never inside functions
-- **No global variables** — encapsulate mutable state in classes or closures
+- **No global variables** — encapsulate mutable state in Zustand stores or closures
 - **No emojis** in code or output unless explicitly requested
-- **snake_case** for functions, variables, modules; PascalCase for classes
-- **Line length** — 120 characters max (configured in ruff)
-
-## Tool Naming Convention
-
-Tools use `verb_noun` snake_case: `search_web`, `fetch_url`, `get_weather`.
-
-Each tool lives in its own file under `tools/` and is auto-discovered via the registry decorator.
+- **camelCase** for functions, variables; PascalCase for types/components; kebab-case for files
+- **Biome** for linting and formatting — run `bun run lint:fix` before committing
 
 ## Architecture Principles
 
 - **Simple MVP first** — layer features incrementally, avoid over-engineering
 - **Single responsibility** — each file does one thing
-- **Async-correct** — wrap blocking calls with `asyncio.to_thread()`, never block the event loop
+- **Vertical slices** — each feature crosses all layers (API → DB → UI) rather than horizontal layers
 - **Live-editable config** — system prompt reads from disk each call, no restart needed
-- **Fail gracefully** — tool errors return user-friendly messages, never crash the bot
+- **Fail gracefully** — tool errors return user-friendly messages, never crash the server
+- **No tRPC for streaming** — use plain Hono routes for AI SDK endpoints; use Hono RPC (`hc`) for type-safe CRUD
+
+## Auth Pattern
+
+- **`protectedRouter()`** factory — `new Hono().use('*', authMiddleware)`. Every route added to it gets JWT auth automatically. New endpoints are protected by default; opting out requires explicit effort.
+- Never read `.env` directly — always use `src/env.ts` Zod-validated exports.
 
 ## Dependencies
 
-- Prefer well-maintained, focused libraries over large frameworks
-- Use `uv` for package management (never pip/npm directly)
-- Pin minimum versions in `pyproject.toml` with `>=`
+- Prefer focused, well-maintained libraries over large frameworks
+- Use `bun` / `bunx` — never `npm` / `npx`
+- `@openrouter/ai-sdk-provider` for LLM access — do not call OpenRouter directly
+- Vercel AI SDK `streamText` for all LLM calls — do not build custom streaming loops
 
 ## Testing
 
-- Use pytest for all tests
-- Mock external services (DNS, HTTP) — tests must work offline
-- Test file naming: `tests/test_<module>.py`
+- Use Vitest for all tests
+- Mock external services (DB, HTTP, LLM) — tests must work offline
+- Test file naming: `src/__tests__/*.test.ts`
 
 ## Git
 
 - Conventional commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`
 - Small, focused commits — one logical change per commit
 - Always push after every commit
+- Lefthook runs Biome check + Vitest on pre-commit
 
 ## Linting
 
-- ruff for linting and formatting
-- Rules: E, F, W, I (isort), UP (pyupgrade), B (bugbear), SIM (simplify), S (bandit security)
-- CI enforces `ruff check` and `ruff format --check`
+- Biome for linting and formatting (replaces ESLint + Prettier)
+- Config lives at repo root `biome.json`, applies to all packages
+- CI enforces `biome check` and `vitest run`
