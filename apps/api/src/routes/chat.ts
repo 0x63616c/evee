@@ -22,7 +22,7 @@ const chatInput = z.object({
 
 const systemPromptPath = resolve(
   import.meta.dirname,
-  '../../../prompts/SYSTEM.md',
+  '../../../../prompts/SYSTEM.md',
 );
 
 export const chatRouter = protectedRouter().post('/', async (c) => {
@@ -121,5 +121,8 @@ export const chatRouter = protectedRouter().post('/', async (c) => {
     },
   });
 
-  return result.toUIMessageStreamResponse();
+  const response = result.toUIMessageStreamResponse();
+  const headers = new Headers(response.headers);
+  headers.set('X-Thread-Id', resolvedThreadId);
+  return new Response(response.body, { status: response.status, headers });
 });
