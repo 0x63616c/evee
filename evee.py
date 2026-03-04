@@ -6,8 +6,11 @@ from datetime import datetime
 from pathlib import Path
 
 import discord
+import truststore
 from dotenv import load_dotenv
 from openai import OpenAI
+
+truststore.inject_into_ssl()
 
 from tools import execute_tool, get_openai_tools, get_status_message
 
