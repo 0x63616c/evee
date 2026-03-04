@@ -1,30 +1,40 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useAuthStore } from '@/stores/auth';
+import { createFileRoute } from '@tanstack/react-router';
+import { MessageSquare } from 'lucide-react';
 
 export const Route = createFileRoute('/_authenticated/dashboard')({
   component: DashboardPage,
 });
 
 function DashboardPage() {
-  const { clearToken } = useAuthStore();
-  const navigate = useNavigate();
+  const { channelId, threadId } = Route.useSearch();
 
-  function handleLogout() {
-    clearToken();
-    navigate({ to: '/login' });
+  if (!channelId) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        <div className="text-center space-y-2">
+          <MessageSquare size={32} className="mx-auto" />
+          <p className="text-sm">Select a channel to get started</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!threadId) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        <div className="text-center space-y-2">
+          <MessageSquare size={32} className="mx-auto" />
+          <p className="text-sm">Select a thread or start a new conversation</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="text-center space-y-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
-        >
-          Sign out
-        </button>
+    <div className="flex h-full items-center justify-center text-muted-foreground">
+      <div className="text-center space-y-2">
+        <MessageSquare size={32} className="mx-auto" />
+        <p className="text-sm">Chat will appear here</p>
       </div>
     </div>
   );
