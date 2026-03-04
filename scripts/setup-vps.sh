@@ -33,7 +33,7 @@ systemctl start fail2ban
 echo "==> Hardening SSH"
 sed -i 's/^#\?PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
 sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
-systemctl restart sshd
+systemctl restart ssh
 
 echo "==> Installing Coolify"
 curl -fsSL https://cdn.coollabs.io/coolify/install.sh | bash
