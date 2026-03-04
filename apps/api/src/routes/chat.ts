@@ -1,7 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
-import type { ModelMessage } from 'ai';
 import { stepCountIs, streamText } from 'ai';
 import { asc, eq } from 'drizzle-orm';
 import { typeid } from 'typeid-js';
@@ -71,7 +70,7 @@ export const chatRouter = protectedRouter().post('/', async (c) => {
     .orderBy(asc(messages.createdAt))
     .limit(100);
 
-  const aiMessages: ModelMessage[] = history
+  const aiMessages = history
     .filter((m) => m.role === 'user' || m.role === 'assistant')
     .map((m) => ({
       role: m.role as 'user' | 'assistant',
