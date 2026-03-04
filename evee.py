@@ -1,5 +1,6 @@
 import asyncio
 import atexit
+import json
 import logging
 import os
 import subprocess
@@ -100,7 +101,7 @@ def load_system_prompt() -> str:
 
 async def chat(messages: list[dict], on_status: OnStatus | None = None) -> str:
     system_prompt = load_system_prompt()
-    tool_schemas = get_openai_tools()
+    tools = get_openai_tools()
     full_messages = [{"role": "system", "content": system_prompt}] + messages
 
     for _ in range(_MAX_TOOL_ITERATIONS):
@@ -109,7 +110,7 @@ async def chat(messages: list[dict], on_status: OnStatus | None = None) -> str:
                 llm.chat.completions.create,
                 model="claude-sonnet-4",
                 messages=full_messages,
-                tools=tool_schemas if tool_schemas else None,
+                tools=tools if tools else None,
             )
         except Exception:
             log.exception("llm request failed")
