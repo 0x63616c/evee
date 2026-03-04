@@ -64,13 +64,17 @@ jobs:
       - uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: '${{ secrets.VPS_SSH_KEY }}'
+      - name: Write Kamal secrets
+        run: |
+          mkdir -p .kamal
+          cat > .kamal/secrets <<EOF
+          KAMAL_REGISTRY_PASSWORD=${{ secrets.GHCR_TOKEN }}
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          EOF
       - run: kamal deploy -c config/deploy.api.yml
-        env:
-          KAMAL_REGISTRY_PASSWORD: ${{ secrets.GHCR_TOKEN }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
 
   deploy-web:
     needs: [lint, test-web]
@@ -85,6 +89,10 @@ jobs:
       - uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: '${{ secrets.VPS_SSH_KEY }}'
+      - name: Write Kamal secrets
+        run: |
+          mkdir -p .kamal
+          cat > .kamal/secrets <<EOF
+          KAMAL_REGISTRY_PASSWORD=${{ secrets.GHCR_TOKEN }}
+          EOF
       - run: kamal deploy -c config/deploy.web.yml
-        env:
-          KAMAL_REGISTRY_PASSWORD: ${{ secrets.GHCR_TOKEN }}
