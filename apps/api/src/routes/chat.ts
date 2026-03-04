@@ -5,79 +5,67 @@ import { stepCountIs, streamText } from 'ai';
 import { asc, eq } from 'drizzle-orm';
 import { typeid } from 'typeid-js';
 import { z } from 'zod';
-import { db } from '../db/index.js';
 import { messages, threads } from '../db/schema.js';
+import { withUserScope } from '../db/with-user-scope.js';
 import { env } from '../env.js';
 import { protectedRouter } from '../lib/protected-router.js';
 import { fetchUrl } from '../tools/fetch-url.js';
 import { searchWeb } from '../tools/search-web.js';
 
 const openrouter = createOpenRouter({ apiKey: env.OPENROUTER_API_KEY });
-
+const systemPromptPath = resolve(
+  import.meta.dirname,
+  '../../../../prompts/SYSTEM.md',
+);
 const chatInput = z.object({
   channelId: z.string().min(1),
   threadId: z.string().optional(),
   message: z.string().min(1),
 });
 
-const systemPromptPath = resolve(
-  import.meta.dirname,
-  '../../../../prompts/SYSTEM.md',
-);
+type ScopedDb = Parameters<Parameters<typeof withUserScope>[1]>[0];
 
-export const chatRouter = protectedRouter().post('/', async (c) => {
-  const body = await c.req.json();
-  const input = chatInput.parse(body);
+function saveMessage(
+  db: ScopedDb,
+  msg: { threadId: string; role: string; content: string; toolCallId?: string },
+) {
+  return db.insert(messages).values({ id: typeid('msg').toString(), ...msg });
+}
 
-  // Load system prompt from disk on each call (live-editable)
-  const systemPrompt = await readFile(systemPromptPath, 'utf-8');
-
-  // Create thread if none provided
-  let threadId = input.threadId;
-  if (!threadId) {
-    threadId = typeid('th').toString();
-    const threadName = input.message.slice(0, 50);
+async function prepareChat(db: ScopedDb, input: z.infer<typeof chatInput>) {
+  const threadId = input.threadId ?? typeid('th').toString();
+  if (!input.threadId)
     await db.insert(threads).values({
       id: threadId,
       channelId: input.channelId,
-      name: threadName,
+      name: input.message.slice(0, 50),
     });
-  }
-
-  // Save user message
-  const userMsgId = typeid('msg').toString();
-  await db.insert(messages).values({
-    id: userMsgId,
-    threadId,
-    role: 'user',
-    content: input.message,
-  });
-
-  // Bump thread updatedAt
+  await saveMessage(db, { threadId, role: 'user', content: input.message });
   await db
     .update(threads)
     .set({ updatedAt: new Date() })
     .where(eq(threads.id, threadId));
-
-  // Capture threadId for use in callbacks
-  const resolvedThreadId = threadId;
-
-  // Load message history for thread continuity (most recent 100)
   const history = await db
     .select()
     .from(messages)
-    .where(eq(messages.threadId, resolvedThreadId))
+    .where(eq(messages.threadId, threadId))
     .orderBy(asc(messages.createdAt))
     .limit(100);
-
   const aiMessages = history
     .filter((m) => m.role === 'user' || m.role === 'assistant')
-    .map((m) => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
-    }));
+    .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+  return { threadId, aiMessages };
+}
 
-  // Stream AI response with tool calling
+export const chatRouter = protectedRouter().post('/', async (c) => {
+  const input = chatInput.parse(await c.req.json());
+  const userId = c.get('user').id;
+  const systemPrompt = await readFile(systemPromptPath, 'utf-8');
+
+  const { threadId, aiMessages } = await withUserScope(userId, (db) =>
+    prepareChat(db, input),
+  );
+
   const result = streamText({
     model: openrouter('deepseek/deepseek-chat'),
     system: systemPrompt,
@@ -85,44 +73,35 @@ export const chatRouter = protectedRouter().post('/', async (c) => {
     tools: { search_web: searchWeb, fetch_url: fetchUrl },
     stopWhen: stepCountIs(10),
     onStepFinish: async ({ toolCalls, toolResults }) => {
-      // Persist tool call and result messages
-      if (toolCalls && toolCalls.length > 0) {
+      if (!toolCalls || toolCalls.length === 0) return;
+      await withUserScope(userId, async (db) => {
         for (let i = 0; i < toolCalls.length; i++) {
           const call = toolCalls[i];
-          const result = toolResults[i];
-
-          // Save tool call as a message
-          await db.insert(messages).values({
-            id: typeid('msg').toString(),
-            threadId: resolvedThreadId,
+          const content = JSON.stringify({
+            type: 'tool_call',
+            name: call.toolName,
+            input: call.input,
+            output: toolResults[i]?.output,
+          });
+          await saveMessage(db, {
+            threadId,
             role: 'tool',
-            content: JSON.stringify({
-              type: 'tool_call',
-              name: call.toolName,
-              input: call.input,
-              output: result?.output,
-            }),
+            content,
             toolCallId: call.toolCallId,
           });
         }
-      }
+      });
     },
     onFinish: async ({ text }) => {
-      // Save final assistant message after streaming completes
-      if (text) {
-        const assistantMsgId = typeid('msg').toString();
-        await db.insert(messages).values({
-          id: assistantMsgId,
-          threadId: resolvedThreadId,
-          role: 'assistant',
-          content: text,
-        });
-      }
+      if (!text) return;
+      await withUserScope(userId, (db) =>
+        saveMessage(db, { threadId, role: 'assistant', content: text }),
+      );
     },
   });
 
   const response = result.toUIMessageStreamResponse();
   const headers = new Headers(response.headers);
-  headers.set('X-Thread-Id', resolvedThreadId);
+  headers.set('X-Thread-Id', threadId);
   return new Response(response.body, { status: response.status, headers });
 });
